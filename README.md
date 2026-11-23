@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="assets/banner.svg" alt="Basic Adversarial Agentic Framework, a project of the Beneficial AI Foundation" width="720">
+</p>
+
 # basic-adversarial-agentic-framework
 
 A Lean 4 package of adversarial Claude agents. Two pairs of agents with
@@ -399,6 +403,15 @@ macOS, on a machine without an API key and without the Claude CLI.
 - A reply of an agent over the API backend has a limit of 64000 tokens, which
   includes the thinking of the model. A larger reply does not fit in one
   request of 600 seconds, as the section on the token limit explains.
+
+## Logo
+
+The directory `assets` holds the logo. The file `banner.svg` shows the mark
+with the name and the logo of the Beneficial AI Foundation, on a dark ground.
+The files `logo.svg` and `logo-dark.svg` hold the mark alone, for a light and
+for a dark ground. The green is `#15C639`, the green of the foundation's logo.
+The text of the banner uses the typeface Manrope where the viewer has it, and
+a system sans serif otherwise.
 
 ## License
 
