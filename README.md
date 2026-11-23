@@ -88,7 +88,9 @@ Agents share no connection. Each `Agent.apiOwn` agent owns one client. Each
 call of an `Agent.cli` agent starts one `claude -p` process with the options
 `--no-session-persistence` and `--tools ""`. The process saves no session, and
 the model has no tool, so it can neither read nor write a file or a memory.
-The thread is the only channel between agents.
+The thread is the only channel between agents. The CLI still loads the
+instruction files of the user at its start, such as `CLAUDE.md`. That content
+is the same for every agent. No run tested whether a CLI option excludes it.
 
 The function `Thread.render` gives a leading space to any line of a turn that
 starts like a header. A turn therefore cannot forge the header of another
@@ -110,10 +112,9 @@ part.
 
 Each round of the supervisor has three phases.
 
-1. The authors debate. After each version of the code the Lean checker reports
-   on the thread. It refuses `sorry`, a new axiom, an import and the commands
-   that run code. The phase ends when the check passes and the challenger has
-   no objection.
+1. The authors debate. After each version of the code the Lean check reports
+   on the thread. The phase ends when the check passes and the challenger has
+   no objection. The debate has at most three rounds.
 2. The reviewers debate the code once.
 3. The supervisor decides. `REVISE` starts the next round. `MERGE` takes
    effect only when the Lean check accepted the last version of the code. The
@@ -121,6 +122,13 @@ Each round of the supervisor has three phases.
 
 The status `merged` records the decision `MERGE` of the supervisor. The flow
 performs no git operation. It writes the accepted code to a file.
+
+The Lean check has three parts. A text filter refuses code that contains one
+of 16 texts, such as `#eval`, `macro` or `unsafe`, and code with a line that
+starts with `import`. The filter also matches inside a comment. The command
+`lean --stdin` then elaborates the code. Last, `#print axioms` must report no
+axiom outside `propext`, `Classical.choice` and `Quot.sound`, which excludes
+`sorry` and a new axiom.
 
 The Lean check does not compare the statement with the prose. That comparison
 is the task of the challenger, of the reviewers and of the supervisor. An
@@ -172,20 +180,41 @@ so a correct flow ends them with a rejection.
 | 28 | The pigeonhole principle | true |
 | 29 | Every non-increasing sequence of natural numbers is eventually constant | true |
 
-Issues 12, 21, 22, 23, 24 and 27 ran with real agents during the development
-of the package. Issues 25, 26, 28 and 29 have not run.
+Seven issues ran with real agents. Issues 25, 26, 28 and 29 have not run.
+
+| Number | Backend | Outcome | Supervisor rounds |
+| --- | --- | --- | --- |
+| 12 | API, and CLI | merged | 1 |
+| 15 | API | rejected | 1 |
+| 21 | API | merged, with a type of rational numbers that the code defines | 1 |
+| 21 | CLI | merged, with the type `Rat` of the core library | 4 |
+| 22 | API | merged | 1 |
+| 23 | API | rejected | 1 |
+| 24 | API | merged | 1 |
+| 27 | API | merged | 3 |
+
+The runs of issues 22 and 23 used earlier instructions, under which the
+challenger and the critic could agree at once. Both agreed, and neither run
+shows an objection. The outcomes of a rerun can differ, since the agents are
+not deterministic.
 
 ## The book
 
 The directory `book` holds a larger example. Its claims are 18 propositions of
 H. S. Hall and S. R. Knight, "Higher Algebra", Fourth Edition, Macmillan,
 1891. The scan is at https://archive.org/details/higheralgebraseq00hall. The
-book is in the public domain in the United States by its date of publication.
-The file `book/source.json` records the source.
+title page of the scan carries the year 1891, so the book is in the public
+domain in the United States. Its status in other countries is not verified.
+The evidence that the book saw wide use is weak and indirect. It consists of
+reprints and library records in several countries, with no adoption figures.
+The file `book/source.json` records the source and this evidence.
 
-The file `book/claims.json` holds the claims. The text of each claim is the
-text that the book prints, with its article number. An agent typed each
-statement from a page image of the scan. Two of the 18, Art. 40 and Art. 111,
+The file `book/claims.json` holds the claims. The text of each claim has four
+parts. They are a line with the source, the definitions that the book prints
+for the article, the statement that the book prints, and the sentence "State
+the result of this article as a Lean theorem and prove it." The mathematical
+notation is a transcription into plain text, such as `a^x` for a power. An
+agent typed each statement from a page image of the scan. Two of the 18, Art. 40 and Art. 111,
 have a second comparison with the page images. Five claims record, in the
 field `gaps`, a condition that the book does not print, such as r ≠ 1 in
 Art. 55. The agents do not see that field.
@@ -227,12 +256,12 @@ choice of that value rests on two measurements of the second run itself, which
 recorded each call of an agent in `book/results/usage-ffi.md`.
 
 1. The need. Five of the 16 replies of the prover held more than 32000 tokens.
-   The largest complete reply held 51100.
+   Four of them were complete, and the largest of those held 51100.
 2. The ceiling. The client does not stream, and a request ends after 600
-   seconds. The long replies of the prover arrived at 108 to 156 tokens per
-   second, and at 121 on average. A reply of 64000 tokens took 549 seconds.
-   The limit of 64000 is therefore the largest round value that fits in one
-   request.
+   seconds. The 11 replies of the prover above 15000 tokens arrived at 108 to
+   156 tokens per second. Over all 16 replies the rate was 121. At the lowest
+   rate, 600 seconds hold 64800 tokens. The one reply that reached 64000
+   tokens took 549 seconds.
 
 | Claim | Result of the second run | Largest reply of the prover |
 | --- | --- | --- |
@@ -240,12 +269,14 @@ recorded each call of an agent in `book/results/usage-ffi.md`.
 | Art. 250 | merged in the third supervisor round | 29744 tokens |
 | Art. 253 Cor. | error. The third reply of the prover reached 64000 tokens after 549 seconds | 64000 tokens, incomplete |
 
-Art. 253 Cor. remains without a result. A higher limit cannot help with the
-present client, since a larger reply exceeds the request limit of 600 seconds.
-The claim needs a client that streams, a longer request limit or shorter
-replies. Its first run with the old limit of 32000 failed for the same reason,
-and so did Art. 250, whose largest reply came just under that old limit in the
-second run.
+Art. 253 Cor. remains without a result. A higher limit is not usable with the
+present client, since a reply above about 64800 tokens can exceed the request
+limit of 600 seconds. The claim needs a client that streams, a longer request
+limit or shorter replies. No run tested any of the three.
+
+In the second run the largest reply for Art. 250 held 29744 tokens, below the
+old limit of 32000. The first run of that claim had failed at 32000. The
+replies of the two runs differ, since the agents are not deterministic.
 
 ### Token usage of the second run
 
@@ -273,8 +304,9 @@ stayed below 3200 tokens per reply.
 ### Fidelity of the accepted statements
 
 Several accepted statements are abstract, since the Lean core library has no
-real numbers. Art. 113 and Art. 250 hold over a field with an order that the
-file itself defines. Art. 111 holds over a field, with the hypotheses a ≠ 0 and
+real numbers. Art. 113 holds over a field of the core library with an order
+structure that its file defines. Art. 250 holds over a class of ordered
+fields that its file defines. Art. 111 holds over a field, with the hypotheses a ≠ 0 and
 2 ≠ 0. Art. 204 holds for any operation with three assumed laws of a power.
 Art. 57 states the sum to infinity through an inequality on integers. The
 fidelity of each encoding rests on the judgment of the agents.
@@ -304,12 +336,17 @@ lean_exe myapp where
   moreLinkArgs := curlLinkArgs
 ```
 
-The agents over the API backend work in a compiled executable only, since
-that backend uses native code. The agents over the CLI backend also work in
-the interpreter.
+No project has required this package by `git` yet, so the snippet above has
+not run. The same form ran for `lean-aibackend`.
 
-This package names the toolchain v4.36.0. The accepted code of the book uses
-declarations of that toolchain, such as `Lean.Grind.Field` and `Rat`.
+The agents over the API backend work in a compiled executable only, since
+that backend uses native code. A run showed this for the backend. The CLI
+backend of `lean-aibackend` works in the interpreter. No run tested an
+`Agent.cli` of this package there.
+
+This package names the toolchain v4.36.0, and it has run under no other
+toolchain. Among the 17 accepted files of the book, four use
+`Lean.Grind.Field` and three use `Rat`.
 
 ## Tests
 
@@ -329,6 +366,13 @@ The variable `AIBACKEND_LIVE` adds runs of the flow with five real Claude
 agents, on the example issue whose number `AIBACKEND_ISSUE` holds. The value
 `ffi` or `cli` selects one backend.
 
+The following ran from a clone without credentials on macOS. The command
+`lake test` passed. The commands `lake exe prove examples ffi 12` and
+`lake exe prove examples ffi 15` ended with "merged" and "rejected". The
+command `lake exe prove examples cli 12` ended with "merged" in the
+development directory. The workflow of the repository runs `lake test` on
+macOS, on a machine without an API key and without the Claude CLI.
+
 ## Layout
 
 - `Adversarial/Agent.lean` — agents, threads and adversarial pairs.
@@ -347,6 +391,11 @@ agents, on the example issue whose number `AIBACKEND_ISSUE` holds. The value
   check runs without Mathlib.
 - The flow has a limit of four supervisor rounds and of three rounds per
   debate of the authors.
+- The flow does not retry a request. A rate limit or an overload of the API
+  ends the current issue with the status `error`.
+- A run has no spending cap. One claim of the book used 224201 output tokens.
+- The usage records hold output tokens only, and only for the API backend.
+- The agents are not deterministic, so two runs of one issue can differ.
 - A reply of an agent over the API backend has a limit of 64000 tokens, which
   includes the thinking of the model. A larger reply does not fit in one
   request of 600 seconds, as the section on the token limit explains.
