@@ -384,7 +384,7 @@ def bookScenario (f : Failures) : IO Unit := do
       match ← leanCheck claim.theoremName (← IO.FS.readFile file) with
       | none => pure ()
       | some failure => check f s!"book/{claim.theoremName}" false failure
-  check f "book/accepted-count" (accepted == 15) (toString accepted)
+  check f "book/accepted-count" (accepted == 17) (toString accepted)
   -- The example issues carry distinct numbers and plain theorem names.
   let numbers := Examples.all.map (·.issue.number)
   check f "examples/distinct-numbers" (numbers.eraseDups.length == numbers.length)

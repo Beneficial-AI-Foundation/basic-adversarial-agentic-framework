@@ -48,7 +48,7 @@ lake exe prove examples ffi 12        # one example issue, through the API
 lake exe prove examples cli 12        # the same issue, through the Claude CLI
 lake exe prove examples               # every example issue
 lake exe prove book/claims.json       # the claims of the book
-lake exe prove <issues.json> [ffi|cli] [number]
+lake exe prove <issues.json> [ffi|cli] [number|all] [maxTokens]
 ```
 
 A run prints one row per issue and writes three kinds of files.
@@ -58,6 +58,7 @@ A run prints one row per issue and writes three kinds of files.
 | `<name>.lean` | The Lean code that the supervisor accepted |
 | `<name>.thread.md` | The whole discussion of the five agents |
 | `summary-<backend>.md` | One row per issue, with the status, the supervisor rounds and the objections |
+| `usage-ffi.md` | One record per call of an agent over the API backend, with its output tokens, its stop reason and its duration |
 
 The results of the examples go to `examples/results`. The results of a file
 go to the directory `results` beside it. A run skips an issue whose thread
@@ -189,8 +190,9 @@ have a second comparison with the page images. Five claims record, in the
 field `gaps`, a condition that the book does not print, such as r ≠ 1 in
 Art. 55. The agents do not see that field.
 
-The directory `book/results` holds the results of one run through the API
-backend.
+The directory `book/results` holds the results of two runs through the API
+backend. The first run used a limit of 32000 tokens per reply. The second run
+repeated the three claims that ended with an error, with a limit of 64000.
 
 | Art. | Topic | Status | Supervisor rounds | Objections of the challenger |
 | --- | --- | --- | --- | --- |
@@ -201,30 +203,83 @@ backend.
 | 68 | Sum of the squares of the first n natural numbers | merged | 2 | 2 |
 | 69 | Sum of the cubes of the first n natural numbers | merged | 1 | 1 |
 | 111 | Solution of the quadratic equation | merged | 1 | 1 |
-| 113 | Nature of the roots of the quadratic equation | error | | |
+| 113 | Nature of the roots of the quadratic equation | merged, in the second run | 3 | 4 |
 | 114 | Sum and product of the roots | merged | 2 | 2 |
 | 163 | Binomial theorem for a positive integral index | merged | 1 | 2 |
 | 204 | Logarithm of a product | merged | 1 | 1 |
 | 205 | Logarithm of a fraction | merged | 2 | 2 |
 | 206 | Logarithm of a power | merged | 1 | 2 |
 | 246 | Properties of an inequality | merged | 2 | 1 |
-| 250 | Arithmetic and geometric mean of two quantities | error | | |
-| 253 Cor. | Arithmetic and geometric mean of n quantities | error | | |
+| 250 | Arithmetic and geometric mean of two quantities | merged, in the second run | 3 | 2 |
+| 253 Cor. | Arithmetic and geometric mean of n quantities | error, in both runs | | |
 | 514 | Remainder of a division by x − a | merged | 1 | 1 |
 | 514 Cor. | Its corollary | merged | 2 | 3 |
 
-The three errors have one cause. A reply of an agent reached the limit of
-32000 tokens, and the client raises an error on an incomplete reply. These
-three claims have no thread file, so the command
-`lake exe prove book/claims.json` runs exactly them.
+### The token limit and the second run
+
+In the first run three claims ended with an error. Each time a reply of an
+agent reached the limit of 32000 tokens, and the client raises an error on an
+incomplete reply. The output tokens of a reply include the thinking of the
+model.
+
+The second run repeated those three claims with a limit of 64000 tokens. The
+choice of that value rests on two measurements of the second run itself, which
+recorded each call of an agent in `book/results/usage-ffi.md`.
+
+1. The need. Five of the 16 replies of the prover held more than 32000 tokens.
+   The largest complete reply held 51100.
+2. The ceiling. The client does not stream, and a request ends after 600
+   seconds. The long replies of the prover arrived at 108 to 156 tokens per
+   second, and at 121 on average. A reply of 64000 tokens took 549 seconds.
+   The limit of 64000 is therefore the largest round value that fits in one
+   request.
+
+| Claim | Result of the second run | Largest reply of the prover |
+| --- | --- | --- |
+| Art. 113 | merged in the third supervisor round | 51100 tokens |
+| Art. 250 | merged in the third supervisor round | 29744 tokens |
+| Art. 253 Cor. | error. The third reply of the prover reached 64000 tokens after 549 seconds | 64000 tokens, incomplete |
+
+Art. 253 Cor. remains without a result. A higher limit cannot help with the
+present client, since a larger reply exceeds the request limit of 600 seconds.
+The claim needs a client that streams, a longer request limit or shorter
+replies. Its first run with the old limit of 32000 failed for the same reason,
+and so did Art. 250, whose largest reply came just under that old limit in the
+second run.
+
+### Token usage of the second run
+
+The run made 49 requests, all with HTTP status 200. It produced 435705 output
+tokens in 3722 seconds of request time. The records hold output tokens only.
+The first run wrote no usage records.
+
+| Agent | Calls | Output tokens | Share | Largest reply | Mean reply | Tokens per second |
+| --- | --- | --- | --- | --- | --- | --- |
+| prover | 16 | 393081 | 90.2 % | 64000 | 24567 | 121 |
+| challenger | 15 | 14259 | 3.3 % | 1847 | 950 | 85 |
+| critic | 6 | 14096 | 3.2 % | 3174 | 2349 | 94 |
+| defender | 6 | 9112 | 2.1 % | 2144 | 1518 | 92 |
+| supervisor | 6 | 5157 | 1.2 % | 1027 | 859 | 83 |
+
+| Claim | Calls | Output tokens | Request seconds | Tokens of the prover |
+| --- | --- | --- | --- | --- |
+| Art. 113 | 23 | 224201 | 1879 | 203938 in 7 replies |
+| Art. 250 | 21 | 87471 | 785 | 66235 in 6 replies |
+| Art. 253 Cor. | 5 | 124033 | 1058 | 122908 in 3 replies |
+
+The prover produced nine tenths of the output tokens. Every other agent
+stayed below 3200 tokens per reply.
+
+### Fidelity of the accepted statements
 
 Several accepted statements are abstract, since the Lean core library has no
-real numbers. Art. 111 holds over a field, with the hypotheses a ≠ 0 and
+real numbers. Art. 113 and Art. 250 hold over a field with an order that the
+file itself defines. Art. 111 holds over a field, with the hypotheses a ≠ 0 and
 2 ≠ 0. Art. 204 holds for any operation with three assumed laws of a power.
 Art. 57 states the sum to infinity through an inequality on integers. The
 fidelity of each encoding rests on the judgment of the agents.
 
-The test suite checks that each of the 15 accepted files still passes the
+The test suite checks that each of the 17 accepted files still passes the
 Lean check.
 
 ## Use from another Lake project
@@ -268,7 +323,7 @@ assistants of `tests/mock_server.py`, through the `Claude.Api` client and TLS.
 | Agent failures | The same loop with an unknown tool, wrong arguments, an endless assistant, a reply outside the protocol and a refusal |
 | Tool use blocks | A tool loop over `tool_use` and `tool_result` blocks, with a forged history as the negative case |
 | Parallel workers | Eight agents in parallel, each with its own client |
-| Book | The 15 accepted Lean files of the book pass the Lean check |
+| Book | The 17 accepted Lean files of the book pass the Lean check |
 
 The variable `AIBACKEND_LIVE` adds runs of the flow with five real Claude
 agents, on the example issue whose number `AIBACKEND_ISSUE` holds. The value
@@ -292,8 +347,9 @@ agents, on the example issue whose number `AIBACKEND_ISSUE` holds. The value
   check runs without Mathlib.
 - The flow has a limit of four supervisor rounds and of three rounds per
   debate of the authors.
-- A reply of an agent over the API backend has a limit of 32000 tokens, which
-  includes the thinking of the model.
+- A reply of an agent over the API backend has a limit of 64000 tokens, which
+  includes the thinking of the model. A larger reply does not fit in one
+  request of 600 seconds, as the section on the token limit explains.
 
 ## License
 
