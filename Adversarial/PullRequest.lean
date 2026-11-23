@@ -219,9 +219,17 @@ def make (make : String → String → IO Agent) : IO Team := do
 
 /-- A team over the Claude API backend. Each agent has a client of its own,
 hence a connection of its own. The thinking of the model counts toward
-`maxTokens`, and a long proof needs room after it. -/
-def api (maxTokens : Nat := 32000) : IO Team :=
-  make fun name instructions => Agent.apiOwn name instructions (maxTokens := maxTokens)
+`maxTokens`, and a long proof needs room after it. The default of 64000 is
+the largest round value that fits in one request of 600 seconds at the
+measured rate of about 120 tokens per second. With a `usageLog`, each
+call of an agent adds a record with the tag, its output tokens and its
+duration. -/
+def api (maxTokens : Nat := 64000) (usageLog : Option System.FilePath := none)
+    (tag : String := "") : IO Team :=
+  make fun name instructions =>
+    match usageLog with
+    | some log => Agent.apiMetered name instructions log tag (maxTokens := maxTokens)
+    | none => Agent.apiOwn name instructions (maxTokens := maxTokens)
 
 /-- A team over the Claude CLI backend. Each call of an agent is one isolated process. -/
 def cli : IO Team :=
@@ -249,7 +257,7 @@ def loadIssues (path : System.FilePath) : IO (List Issue) := do
       text := ← item.getObjValAs? String "text"
       theoremName := ← item.getObjValAs? String "theoremName" }
 
-/-- Runs the pull request flow on a list of issues. The action `team` builds
+/-- Runs the pull request flow on a list of issues. The function `team` builds
 a new team for each issue, so no issue shares a connection with another one.
 The directory `results` receives, per issue, the thread of the flow and the
 accepted Lean code, and a summary under the name of `label`. The value `only`
@@ -257,7 +265,7 @@ restricts the run to one issue by number. The run skips an issue whose thread
 file exists, so an interrupted run resumes.
 
 The function returns the number of issues whose flow raised an error. -/
-def proveIssues (team : IO Team) (label : String) (issues : List Issue)
+def proveIssues (team : Issue → IO Team) (label : String) (issues : List Issue)
     (results : System.FilePath) (only : Option Nat := none) (checker : Checker := {}) : IO Nat := do
   ensure (!label.isEmpty && label.all fun c => c.isAlphanum || c == '_')
     "the label is not a plain identifier"
@@ -269,7 +277,7 @@ def proveIssues (team : IO Team) (label : String) (issues : List Issue)
       ensure (!issue.theoremName.isEmpty && issue.theoremName.all fun c => c.isAlphanum || c == '_')
         s!"the theorem name of issue {issue.number} is not a plain identifier"
       let start ← IO.monoMsNow
-      let outcome ← (do (← team).run issue (checker := checker)).toBaseIO
+      let outcome ← (do (← team issue).run issue (checker := checker)).toBaseIO
       let seconds := ((← IO.monoMsNow) - start) / 1000
       let row ← match outcome with
         | .ok pr => do
@@ -293,7 +301,7 @@ def proveIssues (team : IO Team) (label : String) (issues : List Issue)
 
 /-- Runs `proveIssues` on the issues of a JSON file. The results go to the
 directory `results` beside the file. -/
-def proveClaims (team : IO Team) (label : String) (path : System.FilePath)
+def proveClaims (team : Issue → IO Team) (label : String) (path : System.FilePath)
     (only : Option Nat := none) (checker : Checker := {}) : IO Nat := do
   proveIssues team label (← loadIssues path) ((path.parent.getD ".") / "results") only checker
 

@@ -71,6 +71,43 @@ def apiOwn (name instructions : String) (model : String := Api.defaultModel)
     (maxTokens : Nat := Api.defaultMaxTokens) : IO Agent :=
   return api (← Api.Client.fromDefault) name instructions model maxTokens
 
+/-- The header of a usage log, as two lines of a Markdown table. -/
+def usageHeader : String :=
+  "| Issue | Agent | HTTP status | Stop reason | Output tokens | Milliseconds |\n| --- | --- | --- | --- | --- | --- |\n"
+
+/-- An agent over the Claude API backend with a client of its own, which
+records each call in the usage log `log`. A record holds the tag, the name of
+the agent, the HTTP status, the stop reason, the output tokens that the API
+reports and the duration of the request. The output tokens include the
+thinking of the model.
+
+The agent raises the same errors as `Api.Client.ask`, on a status other than
+200, on a refusal and on a reply that stops at `maxTokens`. -/
+def apiMetered (name instructions : String) (log : System.FilePath) (tag : String := "")
+    (model : String := Api.defaultModel) (maxTokens : Nat := Api.defaultMaxTokens) : IO Agent := do
+  let c ← Api.Client.fromDefault
+  let ask (prompt : String) : IO String := do
+    ensure (!prompt.isEmpty) "the prompt is empty"
+    let start ← IO.monoMsNow
+    let r ← c.post (Api.Client.buildChatRequest #[.user prompt] "" model maxTokens)
+    let ms := (← IO.monoMsNow) - start
+    let json := (Lean.Json.parse r.body).toOption.getD Lean.Json.null
+    let stop := (json.getObjValAs? String "stop_reason").toOption.getD ""
+    let tokens := match (json.getObjVal? "usage").bind (·.getObjValAs? Nat "output_tokens") with
+      | .ok n => toString n
+      | .error _ => ""
+    let handle ← IO.FS.Handle.mk log .append
+    handle.putStrLn s!"| {tag} | {name} | {r.status} | {stop} | {tokens} | {ms} |"
+    if r.status != 200 then throw (IO.userError s!"HTTP {r.status}: {r.body}")
+    let reply ← IO.ofExcept (Api.Client.parseReply r.body)
+    if stop == "refusal" then
+      throw (IO.userError "the model declined the request (stop_reason refusal)")
+    if stop == "max_tokens" then
+      throw (IO.userError
+        s!"the reply is incomplete, since it reached the limit of {maxTokens} tokens (stop_reason max_tokens)")
+    return reply.text
+  return { name, backend := { name := "claude/api", ask }, instructions }
+
 /-- An agent over the Claude CLI backend, in the isolated mode. Each call
 starts one process with a connection of its own, saves no session and gives
 the model no tool. -/
