@@ -1,0 +1,16 @@
+{"version": "1.3.0",
+ "packagesDir": ".lake/packages",
+ "packages":
+ [{"url": "https://github.com/Beneficial-AI-Foundation/lean-aibackend.git",
+   "type": "git",
+   "subDir": null,
+   "scope": "",
+   "rev": "a7207da9673094c7381a8036fa50755a879efdcc",
+   "name": "aibackend",
+   "manifestFile": "lake-manifest.json",
+   "inputRev": "main",
+   "inherited": false,
+   "configFile": "lakefile.lean"}],
+ "name": "adversarial",
+ "lakeDir": ".lake",
+ "fixedToolchain": false}

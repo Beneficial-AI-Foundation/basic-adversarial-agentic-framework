@@ -1,0 +1,272 @@
+[
+  {
+    "number": 40,
+    "title": "To find the sum of a number of terms in Arithmetical Progression (Art. 40)",
+    "text": "Source: H. S. Hall and S. R. Knight, Higher Algebra, Fourth Edition, 1891, Chapter IV (Arithmetical Progression), Art. 40.\nThe book prints the following text.\n38. DEFINITION. Quantities are said to be in Arithmetical Progression when they increase or decrease by a common difference.\n39. [...] If n be the number of terms, and if l denote the last, or nth term, we have l = a + (n − 1) d.\nLet a denote the first term, d the common difference, and n the number of terms. Also let l denote the last term, and s the required sum; then s = a + (a + d) + (a + 2d) + ... + (l − 2d) + (l − d) + l;\ns = (n/2)(a + l) ......(1); and l = a + (n − 1) d ......(2), ∴ s = (n/2){2a + (n − 1) d} ......(3).\nState the result of this article as a Lean theorem and prove it.",
+    "theoremName": "hk_art_40",
+    "source": {
+      "id": "HK-040",
+      "chapter": "IV",
+      "article": "Art. 40",
+      "chapter_title": "Arithmetical Progression",
+      "url": "https://archive.org/details/higheralgebraseq00hall/page/29/mode/1up",
+      "transcription_note": "Art. 40 starts on p. 28 and the formulas are on p. 29. The fraction n over 2 is written (n/2). The dotted leaders before the equation numbers are shortened. The derivation between the conditions and formula (1) is omitted."
+    },
+    "gaps": ""
+  },
+  {
+    "number": 55,
+    "title": "To find the sum of a number of terms in Geometrical Progression (Art. 55)",
+    "text": "Source: H. S. Hall and S. R. Knight, Higher Algebra, Fourth Edition, 1891, Chapter V (Geometrical Progression), Art. 55.\nThe book prints the following text.\n51. DEFINITION. Quantities are said to be in Geometrical Progression when they increase or decrease by a constant factor.\nThe constant factor is also called the common ratio, and it is found by dividing any term by that which immediately precedes it.\nLet a be the first term, r the common ratio, n the number of terms, and s the sum required. Then s = a + ar + ar^2 + ...... + ar^(n−2) + ar^(n−1);\ns = a(r^n − 1)/(r − 1) ......(1). Changing the signs in numerator and denominator, s = a(1 − r^n)/(1 − r) ......(2).\nState the result of this article as a Lean theorem and prove it.",
+    "theoremName": "hk_art_55",
+    "source": {
+      "id": "HK-055",
+      "chapter": "V",
+      "article": "Art. 55",
+      "chapter_title": "Geometrical Progression",
+      "url": "https://archive.org/details/higheralgebraseq00hall/page/39/mode/1up",
+      "transcription_note": "Superscripts are written with ^ and built fractions with /. The article states no condition r ≠ 1. The derivation is omitted."
+    },
+    "gaps": "The book prints no condition r ≠ 1 in Art. 55."
+  },
+  {
+    "number": 57,
+    "title": "Sum to infinity of a decreasing Geometrical Progression (Art. 57)",
+    "text": "Source: H. S. Hall and S. R. Knight, Higher Algebra, Fourth Edition, 1891, Chapter V (Geometrical Progression), Art. 57.\nThe book prints the following text.\n51. DEFINITION. Quantities are said to be in Geometrical Progression when they increase or decrease by a constant factor.\nFrom Art. 55 we have s = a(1 − r^n)/(1 − r) = a/(1 − r) − ar^n/(1 − r). Suppose r is a proper fraction; then the greater the value of n the smaller is the value of r^n, and consequently of ar^n/(1 − r); and therefore by making n sufficiently large, we can make the sum of n terms of the series differ from a/(1 − r) by as small a quantity as we please.\nthe sum of an infinite number of terms of a decreasing Geometrical Progression is a/(1 − r); or more briefly, the sum to infinity is a/(1 − r).\nState the result of this article as a Lean theorem and prove it.",
+    "theoremName": "hk_art_57",
+    "source": {
+      "id": "HK-057",
+      "chapter": "V",
+      "article": "Art. 57",
+      "chapter_title": "Geometrical Progression",
+      "url": "https://archive.org/details/higheralgebraseq00hall/page/40/mode/1up",
+      "transcription_note": "Built fractions are written with /. The statement is printed in italics after the words 'This result is usually stated thus :'."
+    },
+    "gaps": ""
+  },
+  {
+    "number": 65,
+    "title": "Art. 65, Harmonical Progression. Theorems connected with the Progressions",
+    "text": "Source: H. S. Hall and S. R. Knight, Higher Algebra, Fourth Edition, 1891, Chapter VI (Harmonical Progression. Theorems connected with the Progressions), Art. 65.\nThe book prints the following text.\n53. DEFINITION. When three quantities are in Geometrical Progression the middle one is called the geometric mean between the other two.\nIf A, G, H be the arithmetic, geometric, and harmonic means between a and b, we have proved A = (a + b)/2 ......(1). G = √(ab) ......(2). H = 2ab/(a + b) ......(3).\nAH = ((a + b)/2) . (2ab/(a + b)) = ab = G^2; that is, G is the geometric mean between A and H.\nState the result of this article as a Lean theorem and prove it.",
+    "theoremName": "hk_art_65",
+    "source": {
+      "id": "HK-065",
+      "chapter": "VI",
+      "article": "Art. 65",
+      "chapter_title": "Harmonical Progression. Theorems connected with the Progressions",
+      "url": "https://archive.org/details/higheralgebraseq00hall/page/48/mode/1up",
+      "transcription_note": "The radical sign with vinculum over ab is written √(ab). The dot between the two fractions is the book's multiplication sign. The definitions of the arithmetic mean (Art. 42 or nearby) and of the harmonic mean (Arts. 61 to 64) were not read from the scan and are not quoted. The same article continues on p. 49 with the statement 'the arithmetic, geometric, and harmonic means between any two positive quantities are in descending order of magnitude.'"
+    },
+    "gaps": ""
+  },
+  {
+    "number": 68,
+    "title": "To find the sum of the squares of the first n natural numbers (Art. 68)",
+    "text": "Source: H. S. Hall and S. R. Knight, Higher Algebra, Fourth Edition, 1891, Chapter VI (Harmonical Progression. Theorems connected with the Progressions), Art. 68.\nThe book prints the following text.\n67. The numbers 1, 2, 3,...... are often referred to as the natural numbers; the nth term of the series is n, and the sum of the first n terms is (n/2)(n + 1).\nLet the sum be denoted by S; then S = 1^2 + 2^2 + 3^2 + ...... + n^2.\nS = n(n + 1)(2n + 1)/6.\nState the result of this article as a Lean theorem and prove it.",
+    "theoremName": "hk_art_68",
+    "source": {
+      "id": "HK-068",
+      "chapter": "VI",
+      "article": "Art. 68",
+      "chapter_title": "Harmonical Progression. Theorems connected with the Progressions",
+      "url": "https://archive.org/details/higheralgebraseq00hall/page/51/mode/1up",
+      "transcription_note": "Art. 68 starts on p. 50 and the result is on p. 51. The built fraction is written with /. The derivation is omitted."
+    },
+    "gaps": ""
+  },
+  {
+    "number": 69,
+    "title": "To find the sum of the cubes of the first n natural numbers (Art. 69)",
+    "text": "Source: H. S. Hall and S. R. Knight, Higher Algebra, Fourth Edition, 1891, Chapter VI (Harmonical Progression. Theorems connected with the Progressions), Art. 69.\nThe book prints the following text.\n67. The numbers 1, 2, 3,...... are often referred to as the natural numbers; the nth term of the series is n, and the sum of the first n terms is (n/2)(n + 1).\nLet the sum be denoted by S; then S = 1^3 + 2^3 + 3^3 + ...... + n^3.\nS = n^2 (n + 1)^2 / 4 = {n(n + 1)/2}^2. Thus the sum of the cubes of the first n natural numbers is equal to the square of the sum of these numbers.\nState the result of this article as a Lean theorem and prove it.",
+    "theoremName": "hk_art_69",
+    "source": {
+      "id": "HK-069",
+      "chapter": "VI",
+      "article": "Art. 69",
+      "chapter_title": "Harmonical Progression. Theorems connected with the Progressions",
+      "url": "https://archive.org/details/higheralgebraseq00hall/page/51/mode/1up",
+      "transcription_note": "Built fractions are written with /. The derivation is omitted."
+    },
+    "gaps": ""
+  },
+  {
+    "number": 111,
+    "title": "Art. 111, The Theory of Quadratic Equations",
+    "text": "Source: H. S. Hall and S. R. Knight, Higher Algebra, Fourth Edition, 1891, Chapter IX (The Theory of Quadratic Equations), Art. 111.\nThe book prints the following text.\nAfter suitable reduction every quadratic equation may be written in the form ax^2 + bx + c = 0 ......(1), and the solution of the equation is x = (−b ± √(b^2 − 4ac))/(2a) ......(2).\nState the result of this article as a Lean theorem and prove it.",
+    "theoremName": "hk_art_111",
+    "source": {
+      "id": "HK-111",
+      "chapter": "IX",
+      "article": "Art. 111",
+      "chapter_title": "The Theory of Quadratic Equations",
+      "url": "https://archive.org/details/higheralgebraseq00hall/page/83/mode/1up",
+      "transcription_note": "The radical with vinculum is written √( ). The built fraction is written with /."
+    },
+    "gaps": "The book prints no condition a ≠ 0 in Art. 111. The proof of Art. 112 on the same page uses the phrase \"by hypothesis, a is not zero\"."
+  },
+  {
+    "number": 113,
+    "title": "Art. 113, The Theory of Quadratic Equations",
+    "text": "Source: H. S. Hall and S. R. Knight, Higher Algebra, Fourth Edition, 1891, Chapter IX (The Theory of Quadratic Equations), Art. 113.\nThe book prints the following text.\n111. After suitable reduction every quadratic equation may be written in the form ax^2 + bx + c = 0 ......(1), and the solution of the equation is x = (−b ± √(b^2 − 4ac))/(2a) ......(2).\nIn Art. 111 let the two roots in (2) be denoted by α and β, so that α = (−b + √(b^2 − 4ac))/(2a), β = (−b − √(b^2 − 4ac))/(2a); then we have the following results :\n(1) If b^2 − 4ac (the quantity under the radical) is positive, α and β are real and unequal. (2) If b^2 − 4ac is zero, α and β are real and equal, each reducing in this case to −b/(2a). (3) If b^2 − 4ac is negative, α and β are imaginary and unequal. (4) If b^2 − 4ac is a perfect square, α and β are rational and unequal.\nState the result of this article as a Lean theorem and prove it.",
+    "theoremName": "hk_art_113",
+    "source": {
+      "id": "HK-113",
+      "chapter": "IX",
+      "article": "Art. 113",
+      "chapter_title": "The Theory of Quadratic Equations",
+      "url": "https://archive.org/details/higheralgebraseq00hall/page/84/mode/1up",
+      "transcription_note": "The roots are printed as Greek α and β. The article prints no condition on the coefficients a, b, c."
+    },
+    "gaps": ""
+  },
+  {
+    "number": 114,
+    "title": "Art. 114, The Theory of Quadratic Equations",
+    "text": "Source: H. S. Hall and S. R. Knight, Higher Algebra, Fourth Edition, 1891, Chapter IX (The Theory of Quadratic Equations), Art. 114.\nThe book prints the following text.\n111. After suitable reduction every quadratic equation may be written in the form ax^2 + bx + c = 0 ......(1), and the solution of the equation is x = (−b ± √(b^2 − 4ac))/(2a) ......(2).\nSince α = (−b + √(b^2 − 4ac))/(2a), β = (−b − √(b^2 − 4ac))/(2a),\nwe have by addition α + β = (−b + √(b^2 − 4ac) − b − √(b^2 − 4ac))/(2a) = −2b/(2a) = −b/a ......(1); and by multiplication we have αβ = (−b + √(b^2 − 4ac))(−b − √(b^2 − 4ac))/(4a^2) = ((−b)^2 − (b^2 − 4ac))/(4a^2) = 4ac/(4a^2) = c/a ......(2).\nState the result of this article as a Lean theorem and prove it.",
+    "theoremName": "hk_art_114",
+    "source": {
+      "id": "HK-114",
+      "chapter": "IX",
+      "article": "Art. 114",
+      "chapter_title": "The Theory of Quadratic Equations",
+      "url": "https://archive.org/details/higheralgebraseq00hall/page/84/mode/1up",
+      "transcription_note": "Art. 114 starts on p. 84 and result (2) is on p. 85. The same article restates the results in words: 'In a quadratic equation where the coefficient of the first term is unity, (i) the sum of the roots is equal to the coefficient of x with its sign changed; (ii) the product of the roots is equal to the third term.'"
+    },
+    "gaps": ""
+  },
+  {
+    "number": 163,
+    "title": "Binomial Theorem (Art. 163, To find the expansion of (x + a)^n when n is a positive integer)",
+    "text": "Source: H. S. Hall and S. R. Knight, Higher Algebra, Fourth Edition, 1891, Chapter XIII (Binomial Theorem. Positive Integral Index), Art. 163.\nThe book prints the following text.\n[From Art. 163, p. 138] in S_2 the number of terms is the same as the number of combinations of n things 2 at a time; that is, {n}C{2}; in S_3 the number of terms is {n}C{3}; and so on.\nTo find the expansion of (x + a)^n when n is a positive integer.\n(x + a)^n = x^n + {n}C{1} a x^(n−1) + {n}C{2} a^2 x^(n−2) + {n}C{3} a^3 x^(n−3) + ... + {n}C{n} a^n; substituting for {n}C{1}, {n}C{2}, ... we obtain (x + a)^n = x^n + n a x^(n−1) + (n(n − 1)/(1 . 2)) a^2 x^(n−2) + (n(n − 1)(n − 2)/(1 . 2 . 3)) a^3 x^(n−3) + ... + a^n, the series containing n + 1 terms. This is the Binomial Theorem, and the expression on the right is said to be the expansion of (x + a)^n.\nState the result of this article as a Lean theorem and prove it.",
+    "theoremName": "hk_art_163",
+    "source": {
+      "id": "HK-163",
+      "chapter": "XIII",
+      "article": "Art. 163",
+      "chapter_title": "Binomial Theorem. Positive Integral Index",
+      "url": "https://archive.org/details/higheralgebraseq00hall/page/138/mode/1up",
+      "transcription_note": "The book prints the combination symbol as C with a raised left superscript n and a right subscript r; it is written here as {n}C{r}. The formal definition of the symbol is in Chapter XI (Permutations and Combinations), which was not read from the scan and is not quoted. Art. 163 starts on p. 137."
+    },
+    "gaps": ""
+  },
+  {
+    "number": 204,
+    "title": "To find the logarithm of a product (Art. 204)",
+    "text": "Source: H. S. Hall and S. R. Knight, Higher Algebra, Fourth Edition, 1891, Chapter XVI (Logarithms), Art. 204.\nThe book prints the following text.\n199. DEFINITION. The logarithm of any number to a given base is the index of the power to which the base must be raised in order to equal the given number. Thus if a^x = N, x is called the logarithm of N to the base a.\n200. The logarithm of N to base a is usually written log_a N, so that the same meaning is expressed by the two equations a^x = N; x = log_a N.\nLet MN be the product; let a be the base of the system, and suppose x = log_a M, y = log_a N; so that a^x = M, a^y = N.\nlog_a MN = x + y = log_a M + log_a N. Similarly, log_a MNP = log_a M + log_a N + log_a P; and so on for any number of factors.\nState the result of this article as a Lean theorem and prove it.",
+    "theoremName": "hk_art_204",
+    "source": {
+      "id": "HK-204",
+      "chapter": "XVI",
+      "article": "Art. 204",
+      "chapter_title": "Logarithms",
+      "url": "https://archive.org/details/higheralgebraseq00hall/page/176/mode/1up",
+      "transcription_note": "The subscript base is written log_a. Art. 207 restates the result in words: '(1) the logarithm of a product is equal to the sum of the logarithms of its factors;'. The chapter prints no condition on the base a or on the positivity of M and N in Arts. 199 to 207."
+    },
+    "gaps": "The book prints no positivity condition on the base or on the arguments of the logarithm."
+  },
+  {
+    "number": 205,
+    "title": "To find the logarithm of a fraction (Art. 205)",
+    "text": "Source: H. S. Hall and S. R. Knight, Higher Algebra, Fourth Edition, 1891, Chapter XVI (Logarithms), Art. 205.\nThe book prints the following text.\n199. DEFINITION. The logarithm of any number to a given base is the index of the power to which the base must be raised in order to equal the given number. Thus if a^x = N, x is called the logarithm of N to the base a.\nLet M/N be the fraction, and suppose x = log_a M, y = log_a N; so that a^x = M, a^y = N.\nlog_a (M/N) = x − y = log_a M − log_a N.\nState the result of this article as a Lean theorem and prove it.",
+    "theoremName": "hk_art_205",
+    "source": {
+      "id": "HK-205",
+      "chapter": "XVI",
+      "article": "Art. 205",
+      "chapter_title": "Logarithms",
+      "url": "https://archive.org/details/higheralgebraseq00hall/page/177/mode/1up",
+      "transcription_note": "Art. 205 starts on p. 176 and the result is on p. 177. Art. 207 restates the result in words: '(2) the logarithm of a fraction is equal to the logarithm of the numerator diminished by the logarithm of the denominator;'."
+    },
+    "gaps": "The book prints no positivity condition on the base or on the arguments of the logarithm."
+  },
+  {
+    "number": 206,
+    "title": "To find the logarithm of a number raised to any power, integral or fractional (Art. 206)",
+    "text": "Source: H. S. Hall and S. R. Knight, Higher Algebra, Fourth Edition, 1891, Chapter XVI (Logarithms), Art. 206.\nThe book prints the following text.\n199. DEFINITION. The logarithm of any number to a given base is the index of the power to which the base must be raised in order to equal the given number. Thus if a^x = N, x is called the logarithm of N to the base a.\nLet log_a (M^p) be required, and suppose x = log_a M, so that a^x = M;\nlog_a (M^p) = p log_a M. Similarly, log_a (M^(1/r)) = (1/r) log_a M.\nState the result of this article as a Lean theorem and prove it.",
+    "theoremName": "hk_art_206",
+    "source": {
+      "id": "HK-206",
+      "chapter": "XVI",
+      "article": "Art. 206",
+      "chapter_title": "Logarithms",
+      "url": "https://archive.org/details/higheralgebraseq00hall/page/177/mode/1up",
+      "transcription_note": "Art. 207 restates the results in words: '(3) the logarithm of the pth power of a number is p times the logarithm of the number; (4) the logarithm of the rth root of a number is equal to 1/r th of the logarithm of the number.'"
+    },
+    "gaps": "The book prints no positivity condition on the base or on the argument of the logarithm."
+  },
+  {
+    "number": 246,
+    "title": "Art. 246, Inequalities",
+    "text": "Source: H. S. Hall and S. R. Knight, Higher Algebra, Fourth Edition, 1891, Chapter XIX (Inequalities), Art. 246.\nThe book prints the following text.\n245. Any quantity a is said to be greater than another quantity b when a − b is positive; thus 2 is greater than −3, because 2 − (−3), or 5 is positive. Also b is said to be less than a when b − a is negative; thus −5 is less than −2, because −5 − (−2), or −3 is negative.\n[Art. 245, same page] In the present chapter we shall suppose (unless the contrary is directly stated) that the letters always denote real and positive quantities.\nIf a > b, then it is evident that a + c > b + c; a − c > b − c; ac > bc; a/c > b/c; that is, an inequality will still hold after each side has been increased, diminished, multiplied, or divided by the same positive quantity.\nState the result of this article as a Lean theorem and prove it.",
+    "theoremName": "hk_art_246",
+    "source": {
+      "id": "HK-246",
+      "chapter": "XIX",
+      "article": "Art. 246",
+      "chapter_title": "Inequalities",
+      "url": "https://archive.org/details/higheralgebraseq00hall/page/208/mode/1up",
+      "transcription_note": "The built fractions a over c and b over c are written with /."
+    },
+    "gaps": ""
+  },
+  {
+    "number": 250,
+    "title": "Art. 250, Inequalities",
+    "text": "Source: H. S. Hall and S. R. Knight, Higher Algebra, Fourth Edition, 1891, Chapter XIX (Inequalities), Art. 250.\nThe book prints the following text.\n245. Any quantity a is said to be greater than another quantity b when a − b is positive;\n[Art. 245, p. 208] In the present chapter we shall suppose (unless the contrary is directly stated) that the letters always denote real and positive quantities.\nThe square of every real quantity is positive, and therefore greater than zero. Thus (a − b)^2 is positive; ∴ a^2 − 2ab + b^2 > 0; ∴ a^2 + b^2 > 2ab. Similarly (x + y)/2 > √(xy); that is, the arithmetic mean of two positive quantities is greater than their geometric mean. The inequality becomes an equality when the quantities are equal.\nState the result of this article as a Lean theorem and prove it.",
+    "theoremName": "hk_art_250",
+    "source": {
+      "id": "HK-250",
+      "chapter": "XIX",
+      "article": "Art. 250",
+      "chapter_title": "Inequalities",
+      "url": "https://archive.org/details/higheralgebraseq00hall/page/209/mode/1up",
+      "transcription_note": "The radical with vinculum is written √(xy). The whole article is quoted, including its last sentence on the case of equal quantities."
+    },
+    "gaps": ""
+  },
+  {
+    "number": 253,
+    "title": "Cor. to Art. 253 (To find the greatest value of a product the sum of whose factors is constant)",
+    "text": "Source: H. S. Hall and S. R. Knight, Higher Algebra, Fourth Edition, 1891, Chapter XIX (Inequalities), Art. 253, Cor..\nThe book prints the following text.\nLet there be n factors a, b, c, ... k, and suppose that their sum is constant and equal to s. [Art. 245, p. 208] In the present chapter we shall suppose (unless the contrary is directly stated) that the letters always denote real and positive quantities.\nCOR. If a, b, c, ... k are unequal, ((a + b + c + ... + k)/n)^n > abc ... k; that is, (a + b + c + ... + k)/n > (abc ... k)^(1/n). By an extension of the meaning of the terms arithmetic mean and geometric mean this result is usually quoted as follows : the arithmetic mean of any number of positive quantities is greater than the geometric mean.\nState the result of this article as a Lean theorem and prove it.",
+    "theoremName": "hk_art_253",
+    "source": {
+      "id": "HK-253",
+      "chapter": "XIX",
+      "article": "Art. 253, Cor.",
+      "chapter_title": "Inequalities",
+      "url": "https://archive.org/details/higheralgebraseq00hall/page/211/mode/1up",
+      "transcription_note": "Built fractions are written with / and the exponent 1 over n is written ^(1/n). The body of Art. 253 before the corollary states 'the greatest value of the product is (s/n)^n, or ((a + b + c + ... + k)/n)^n'."
+    },
+    "gaps": ""
+  },
+  {
+    "number": 514,
+    "title": "To find the remainder when any rational integral function of x is divided by x − a (Art. 514)",
+    "text": "Source: H. S. Hall and S. R. Knight, Higher Algebra, Fourth Edition, 1891, Chapter XXXIV (Miscellaneous Theorems and Examples), Art. 514.\nThe book prints the following text.\n[From Art. 535, p. 451] Let p_0 x^n + p_1 x^(n−1) + p_2 x^(n−2) + ...... + p_(n−1) x + p_n be a rational integral function of x of n dimensions, and let us denote it by f(x);\nLet f(x) denote any rational integral function of x; divide f(x) by x − a until a remainder is obtained which does not involve x; let Q be the quotient, and R the remainder; then f(x) = Q(x − a) + R.\nR = f(a).\nState the result of this article as a Lean theorem and prove it.",
+    "theoremName": "hk_art_514",
+    "source": {
+      "id": "HK-514",
+      "chapter": "XXXIV",
+      "article": "Art. 514",
+      "chapter_title": "Miscellaneous Theorems and Examples",
+      "url": "https://archive.org/details/higheralgebraseq00hall/page/432/mode/1up",
+      "transcription_note": "The book gives this proposition no name such as 'Remainder Theorem'; the name field holds the italic heading of the article. The definition quoted from Art. 535 comes from a later chapter (XXXV); the place where the book first defines 'rational integral function' was not located. Art. 536 restates the result: 'In Art. 514 it was proved that when f(x) is divided by x − a, the remainder is f(a)'."
+    },
+    "gaps": ""
+  },
+  {
+    "number": 5141,
+    "title": "Cor. to Art. 514",
+    "text": "Source: H. S. Hall and S. R. Knight, Higher Algebra, Fourth Edition, 1891, Chapter XXXIV (Miscellaneous Theorems and Examples), Art. 514, Cor..\nThe book prints the following text.\n[From Art. 535, p. 451] Let p_0 x^n + p_1 x^(n−1) + p_2 x^(n−2) + ...... + p_(n−1) x + p_n be a rational integral function of x of n dimensions, and let us denote it by f(x);\nLet f(x) denote any rational integral function of x; divide f(x) by x − a until a remainder is obtained which does not involve x; let Q be the quotient, and R the remainder; then f(x) = Q(x − a) + R. [Result of Art. 514] R = f(a).\nCOR. If f(x) is exactly divisible by x − a, then R = 0, that is f(a) = 0; hence if a rational integral function of x vanishes when x = a, it is divisible by x − a.\nState the result of this article as a Lean theorem and prove it.",
+    "theoremName": "hk_art_514_cor",
+    "source": {
+      "id": "HK-514-COR",
+      "chapter": "XXXIV",
+      "article": "Art. 514, Cor.",
+      "chapter_title": "Miscellaneous Theorems and Examples",
+      "url": "https://archive.org/details/higheralgebraseq00hall/page/433/mode/1up",
+      "transcription_note": "The book gives this corollary no name such as 'Factor Theorem'. The corollary is at the top of p. 433."
+    },
+    "gaps": ""
+  }
+]

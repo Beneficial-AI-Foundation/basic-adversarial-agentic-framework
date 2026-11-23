@@ -1,0 +1,25 @@
+{
+  "book": {
+    "title": "Higher Algebra: A Sequel to Elementary Algebra for Schools",
+    "authors": [
+      "H. S. Hall",
+      "S. R. Knight"
+    ],
+    "publisher": "Macmillan and Co., London and New York",
+    "edition": "Fourth Edition, 1891 (title page of the scan reads: First Printed 1887. Second Edition with corrections 1888. Third Edition revised and enlarged 1889. Reprinted 1890. Fourth Edition 1891.)",
+    "license": "Public domain in the United States by publication date (title page dated 1891). The Internet Archive item used here carries no explicit rights statement. A second Internet Archive item of the same title (identifier HIGHERALGEBRA_201906) carries the Creative Commons Public Domain Mark 1.0. Status outside the United States was not verified.",
+    "license_url": "http://creativecommons.org/publicdomain/mark/1.0/",
+    "book_url": "https://archive.org/details/higheralgebraseq00hall",
+    "evidence_of_use": {
+      "strength": "weak and indirect; no adoption figures were found",
+      "summary": "Internet Archive metadata for the scanned copy lists the publisher as 'London : Macmillan ; New York : St. Martin's Press' with the description 'Reprinted with corrections in 1964', and the Internet Archive search API reports 127611 downloads for this item. The same search lists a Canadian school edition, 'Algebra for matriculation (senior leaving); being the first xix chapters of Higher Algebra' (1908), and copies from the Digital Library of India (1890, 1924). Web search results (titles and snippets only, pages not opened) list a Macmillan India 1981 edition, an Arihant 'Classic Texts Series' reprint in India, and library catalogue records in the Philippines, Malaysia and Greece.",
+      "source_urls": [
+        "https://archive.org/metadata/higheralgebraseq00hall",
+        "https://archive.org/advancedsearch.php?q=title%3A%28higher+algebra%29+AND+creator%3A%28Hall%29&fl%5B%5D=identifier&fl%5B%5D=title&fl%5B%5D=year&fl%5B%5D=downloads&fl%5B%5D=licenseurl&sort%5B%5D=downloads+desc&rows=12&output=json",
+        "https://arihantbooks.com/products/classic-texts-series-higher-algebra-1"
+      ]
+    },
+    "extraction_method": "Each statement was read from the page image of the scan (https://archive.org/download/higheralgebraseq00hall/page/n{printed page + 27}_w1000.jpg) and typed out. The OCR text was used only to locate articles. All mathematics in this file is a plain text transcription of typeset formulas."
+  },
+  "note": "The statements are transcriptions from page images of the scan. Two of the eighteen, Art. 40 and Art. 111, were compared with the page images a second time."
+}
