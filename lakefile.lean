@@ -32,8 +32,18 @@ lean_exe scenarios where
   srcDir := "tests"
   moreLinkArgs := curlLinkArgs
 
-/-- The test driver. It builds and runs the executable `scenarios`. -/
+/-- The tests of the generic flow, with scripted agents. -/
+lean_exe flowtests where
+  root := `FlowTests
+  srcDir := "tests"
+  moreLinkArgs := curlLinkArgs
+
+/-- The test driver. It builds and runs the executables `flowtests` and
+`scenarios`, and stops at the first failure. -/
 @[test_driver]
 script test args do
-  let child ← IO.Process.spawn { cmd := (← getLake).toString, args := #["exe", "scenarios"] ++ args.toArray }
+  let lake := (← getLake).toString
+  let flow ← (← IO.Process.spawn { cmd := lake, args := #["exe", "flowtests"] }).wait
+  if flow != 0 then return flow
+  let child ← IO.Process.spawn { cmd := lake, args := #["exe", "scenarios"] ++ args.toArray }
   child.wait

@@ -121,6 +121,35 @@ The function `Thread.render` gives a leading space to any line of a turn that
 starts like a header. A turn therefore cannot forge the header of another
 speaker.
 
+## Generic flow
+
+The module `Adversarial.Flow` holds a flow of `n` phases. In each phase a
+supervisor manages a set of agents over rounds. A flow with one phase runs the
+same code as a flow with several phases.
+
+In a round the author of the phase, if the phase has one, writes the work, and
+the check of the phase reports on it. Each active agent then replies. A reply
+that starts with `NO OBJECTION` has no objection, and any other reply is an
+objection. The supervisor replies last, and the first word of its reply is the
+decision.
+
+| Decision | Effect |
+| --- | --- |
+| `CONTINUE` | Another round. It requires an objection. The supervisor drops every agent without objection and the agents of its `DROP a, b` lines, never below `minAgents` |
+| `ACCEPT` | The next phase, or the status `accepted` after the last phase. The flow refuses it while the last check failed |
+| `BACK` | An earlier phase, the one that the next word names or else the previous one. The phase starts again with all its agents |
+| `REJECT` | The status `rejected` |
+
+At the floor `minAgents`, dropped agents return. The named agents with an
+objection return first, the last named first. The agents without objection
+return last. A phase that reaches `maxRounds` rounds, or a flow that reaches
+`maxVisits` visits, ends with the status `undecided`. Any other reply of a
+supervisor raises an `IO` error.
+
+The outcome holds the thread and one `Entry` per turn, with the phase, the
+visit, the round, the speaker, the text, the kind of the turn and the active
+agents.
+
 ## Pull request flow
 
 The module `Adversarial.PullRequest` holds the flow. An issue is prose with
@@ -375,7 +404,14 @@ toolchain. Among the 17 accepted files of the book, four use
 
 ## Tests
 
-The command `lake test` runs six scenarios with the deterministic simulated
+The command `lake test` first runs the 20 tests of the generic flow in
+`tests/FlowTests.lean`, with scripted agents and no backend. They cover flows
+of one, two and three phases, the returns to earlier phases, the drops of
+agents and the floor `minAgents`, the limits of rounds and visits, each
+decision, the replies outside the protocol, the failure of the check, the
+errors of agents and the entries of the thread.
+
+The command then runs six scenarios with the deterministic simulated
 assistants of `tests/mock_server.py`, through the `Claude.Api` client and TLS.
 
 | Scenario | Content |
@@ -401,10 +437,12 @@ macOS, on a machine without an API key and without the Claude CLI.
 ## Layout
 
 - `Adversarial/Agent.lean` — agents, threads and adversarial pairs.
+- `Adversarial/Flow.lean` — the generic flow of `n` phases.
 - `Adversarial/PullRequest.lean` — the flow, the Lean check, teams and the runs on issues.
 - `Adversarial/Examples.lean` — the example issues.
 - `Prove.lean` — the executable `prove`.
 - `book/` — the claims of the book and the results of one run.
+- `tests/FlowTests.lean` — the tests of the generic flow.
 - `tests/Scenarios.lean` — the scenarios.
 - `tests/mock_server.py` — the mock of the Messages API, with the simulated assistants.
 
