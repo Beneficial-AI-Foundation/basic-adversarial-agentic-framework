@@ -145,6 +145,9 @@ a plain name of letters, digits, `_` and `-`, so a `DROP` line can name it.
 | `REJECT` | The status `rejected` |
 
 When the drops would leave fewer agents than `minAgents`, no agent leaves. A
+phase whose check is not `binding` reports a failed check as evidence only.
+The field `onDecision` of a flow runs an action after each decision, with the
+state so far. A
 phase that reaches `maxRounds` rounds, or a flow that reaches
 `maxVisits` visits, ends with the status `undecided`. Any other reply of a
 supervisor raises an `IO` error.
@@ -414,7 +417,7 @@ toolchain. Among the 17 accepted files of the book, four use
 
 ## Tests
 
-The command `lake test` first runs the 27 tests of the generic flow in
+The command `lake test` first runs the 29 tests of the generic flow in
 `tests/FlowTests.lean`, with scripted agents and no backend. They cover flows
 of one, two and three phases, the returns to earlier phases, the drops of
 agents and the floor `minAgents`, the limits of rounds and visits, each

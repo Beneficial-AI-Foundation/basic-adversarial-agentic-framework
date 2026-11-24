@@ -338,6 +338,33 @@ def refusalReturns (f : Failures) : IO Unit := do
   check f "reports" (o.thread.turnsOf "check" == ["FAIL", "REFUSED", "PASS"])
     (toString (o.thread.turnsOf "check"))
 
+/-- Test 28. The failed check of a phase that is not binding reports the
+failure and blocks no acceptance. -/
+def evidenceOnly (f : Failures) : IO Unit := do
+  let o ← Flow.run { phases := #[{
+    name := "claim", binding := false, author := some (← scripted "proponent" ["garbled"])
+    check := fun _ => pure (some "the statement does not occur in the source")
+    agents := [← scripted "a" ["NO OBJECTION"]], supervisor := ← scripted "s" ["ACCEPT"] }] } start
+  check f "status" (o.status == .accepted) (repr o.status).pretty
+  check f "report" (o.thread.turnsOf "check" == ["The check fails. the statement does not occur in the source"])
+    (toString (o.thread.turnsOf "check"))
+
+/-- Test 29. The flow calls `onDecision` after each decision, with the state so far. -/
+def onDecision (f : Failures) : IO Unit := do
+  let seen ← IO.mkRef (#[] : Array Snapshot)
+  let pr : Phase := {
+    name := "pr", author := some (← scripted "prover" ["v1", "v2"])
+    agents := [← scripted "challenger" ["OBJECTION x", "NO OBJECTION"]]
+    supervisor := .rule fun v => if v.objectors.isEmpty then .accept else .continueDebate }
+  let o ← Flow.run { phases := #[pr, ← quietPhase "review"], onDecision := fun s => seen.modify (·.push s) } start
+  let s ← seen.get
+  check f "status" (o.status == .accepted) (repr o.status).pretty
+  check f "decisions" ((s.toList.map fun x => (x.phase, x.round, x.decision)) ==
+    [("pr", 1, .continueDebate), ("pr", 2, .accept), ("review", 1, .accept)])
+  check f "reply" ((s.toList.map (·.reply)) == ["", "", "ACCEPT"])
+  check f "work" ((s.toList.map (·.work)) == ["v1", "v2", "v2"])
+  check f "thread" ((s.toList.getLast?.map (·.thread.size)) == some o.thread.size)
+
 def tests : List (String × (Failures → IO Unit)) := [
   ("one-phase", onePhase), ("two-rounds", twoRounds), ("two-phases", twoPhases),
   ("three-phases", threePhases), ("back-previous", backPrevious), ("back-named", backNamed),
@@ -348,6 +375,6 @@ def tests : List (String × (Failures → IO Unit)) := [
   ("errors", errors), ("entries", entries), ("no-objection-marks", noObjectionMarks),
   ("continue-failed-check", continueFailedCheck), ("back-unknown", backUnknown),
   ("speaker-names", speakerNames), ("rule-supervisor", ruleSupervisor), ("phase-words", phaseWords),
-  ("refusal-returns", refusalReturns)]
+  ("refusal-returns", refusalReturns), ("evidence-only", evidenceOnly), ("on-decision", onDecision)]
 
 def main : IO Unit := runTests "flow" tests

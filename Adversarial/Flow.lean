@@ -74,6 +74,9 @@ structure Phase where
   check : String → IO (Option String) := fun _ => pure none
   /-- The speaker of the reports of the check. -/
   checker : String := "check"
+  /-- Whether a failed check blocks the final acceptance. Without it, the
+  report of the check is evidence for the agents only. -/
+  binding : Bool := true
   /-- The agents that examine the work. -/
   agents : List Agent
   /-- The supervisor that decides at the end of each round. -/
@@ -215,6 +218,19 @@ def remaining (active objectors named : List String) (minAgents : Nat) : List St
 
 end Flow
 
+/-- The state of a flow after a decision of a supervisor. -/
+structure Flow.Snapshot where
+  phase : String
+  visit : Nat
+  round : Nat
+  decision : Flow.Decision
+  /-- The reply of an agent supervisor, or the empty string for a rule. -/
+  reply : String
+  /-- The last work of an author. -/
+  work : String
+  thread : Thread
+  entries : Array Flow.Entry
+
 /-- A flow, as a sequence of phases. -/
 structure Flow where
   /-- The name of the flow, a plain word. Each entry carries it. -/
@@ -223,6 +239,9 @@ structure Flow where
   /-- The largest number of visits to phases over the whole flow. It bounds
   the returns to earlier phases. -/
   maxVisits : Nat := 8
+  /-- An action after each decision of a supervisor, before the flow applies
+  it, such as a commit of the thread. -/
+  onDecision : Flow.Snapshot → IO Unit := fun _ => pure ()
 
 namespace Flow
 
@@ -277,6 +296,10 @@ of the round and adds no turn.
   or else the previous one.
 * `REJECT` ends the flow with the status `rejected`.
 
+A phase whose check is not `binding` reports a failed check, and the failure
+blocks no acceptance. After each decision the flow calls `onDecision` with the
+state so far.
+
 The flow raises an `IO` error on any other reply, and when an agent raises
 one. It ends with the status `undecided` after `maxRounds` rounds of a phase
 or `maxVisits` visits. -/
@@ -306,7 +329,7 @@ def run (flow : Flow) (start : Thread) : IO Outcome := do
         work := text
         let failure ← phase.check text
         let t2 ← IO.monoMsNow
-        passed := failure.isNone
+        passed := failure.isNone || !phase.binding
         let report := phase.report failure
         thread := t.push { speaker := phase.checker, text := report }
         entries := (entries.push (entry author.name text .work (t1 - t0))).push
@@ -345,6 +368,8 @@ def run (flow : Flow) (start : Thread) : IO Outcome := do
         decision ← match resolve flow.phases index word "" with
           | .ok d => pure d
           | .error reason => throw (protocolError reason reply)
+      flow.onDecision { phase := phase.name, visit, round, decision, work, thread, entries
+                        reply := if let .agent _ := phase.supervisor then reply else "" }
       match decision with
       | .continueDebate =>
         if objectors.isEmpty && passed then
