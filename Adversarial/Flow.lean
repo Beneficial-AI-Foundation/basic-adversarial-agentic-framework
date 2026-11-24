@@ -13,7 +13,11 @@ of the same code.
 After a round that continues, the supervisor drops every agent without
 objection and possibly more. When the drops would leave fewer agents than the
 `minAgents` of the phase, no agent leaves. A return to a phase starts it again
-with all its agents. -/
+with all its agents.
+
+A supervisor is an agent, which replies on the thread, or a rule, which
+decides from the round without a turn. Each phase has its own decision words,
+such as `MERGE`, `REVISE` and `REJECT` for a review. -/
 
 namespace Adversarial
 
@@ -23,6 +27,40 @@ namespace Flow
 
 /-- The text that opens the reply of an agent without objection. -/
 def noObjectionMark : String := "NO OBJECTION"
+
+/-- A decision word of a supervisor. The flow resolves the target of `back`. -/
+inductive Word where
+  | continueDebate
+  | accept
+  | back
+  | reject
+deriving BEq, Repr
+
+/-- The decision words of a phase by default. -/
+def defaultWords : List (String × Word) :=
+  [("CONTINUE", .continueDebate), ("ACCEPT", .accept), ("BACK", .back), ("REJECT", .reject)]
+
+/-- What a rule supervisor sees at the end of a round. -/
+structure View where
+  round : Nat
+  maxRounds : Nat
+  /-- Whether the last check of the flow passed. -/
+  passed : Bool
+  /-- The agents that objected in the round. -/
+  objectors : List String
+
+/-- The supervisor of a phase. An agent replies on the thread. A rule decides
+from the round and adds no turn. -/
+inductive Supervisor where
+  | agent (a : Agent)
+  | rule (decide : View → Word)
+
+instance : Coe Agent Supervisor := ⟨.agent⟩
+
+/-- The report of a check on the thread by default. -/
+def defaultReport : Option String → String
+  | none => "The check passes."
+  | some reason => s!"The check fails. {reason}"
 
 /-- One phase of a flow. -/
 structure Phase where
@@ -38,8 +76,14 @@ structure Phase where
   checker : String := "check"
   /-- The agents that examine the work. -/
   agents : List Agent
-  /-- The agent that decides at the end of each round. -/
-  supervisor : Agent
+  /-- The supervisor that decides at the end of each round. -/
+  supervisor : Supervisor
+  /-- The decision words of the supervisor and their meaning. -/
+  words : List (String × Word) := defaultWords
+  /-- The report of the check on the thread, from the reason of a failure. -/
+  report : Option String → String := defaultReport
+  /-- The notice of a refused acceptance. -/
+  refusal : String := "The acceptance did not happen, since the check of the last work failed."
   /-- The largest number of rounds of one visit to the phase. -/
   maxRounds : Nat := 3
   /-- The least number of agents that the drops of a round may leave. -/
@@ -131,15 +175,16 @@ def lineNames (key reply : String) : List String :=
 /-- The agents that the `DROP` lines of a reply name, in order. -/
 def drops (reply : String) : List String := lineNames "DROP" reply
 
-/-- The decision of the supervisor of the phase with index `index`. After
-`BACK`, a line `PHASE name` names an earlier phase. Without that line the
+/-- The decision of a word in the phase with index `index`. For `back`, a
+line `PHASE name` of the reply names an earlier phase. Without that line the
 flow returns to the previous phase. -/
-def parseDecision (phases : Array Phase) (index : Nat) (reply : String) : Except String Decision :=
-  match firstWord reply with
-  | "CONTINUE" => .ok .continueDebate
-  | "ACCEPT" => .ok .accept
-  | "REJECT" => .ok .reject
-  | "BACK" =>
+def resolve (phases : Array Phase) (index : Nat) (word : Word) (reply : String) :
+    Except String Decision :=
+  match word with
+  | .continueDebate => .ok .continueDebate
+  | .accept => .ok .accept
+  | .reject => .ok .reject
+  | .back =>
     match lineNames "PHASE" reply with
     | [] =>
       if index > 0 then .ok (.back (index - 1))
@@ -151,7 +196,14 @@ def parseDecision (phases : Array Phase) (index : Nat) (reply : String) : Except
         else .error s!"the phase {target} is not earlier than the current phase"
       | none => .error s!"no phase has the name {target}"
     | _ => .error "the reply names more than one phase"
-  | _ => .error "the first word is not CONTINUE, ACCEPT, BACK or REJECT"
+
+/-- The decision of a reply of the supervisor of the phase with index
+`index`. The first word of the reply is one of the words of the phase. -/
+def parseDecision (phases : Array Phase) (index : Nat) (reply : String) : Except String Decision :=
+  let words := (phases[index]?.map (·.words)).getD defaultWords
+  match (words.find? (·.1 == firstWord reply)).map (·.2) with
+  | some word => resolve phases index word reply
+  | none => .error s!"the first word is not one of {", ".intercalate (words.map (·.1))}"
 
 /-- The agents that stay active after a round that continues. The supervisor
 drops every agent without objection and the agents that it names. When fewer
@@ -186,8 +238,14 @@ def validate (flow : Flow) : IO Unit := do
     ensure (p.maxRounds > 0) s!"the phase {p.name} has no round"
     ensure (!p.agents.isEmpty) s!"the phase {p.name} has no agent"
     ensure (p.minAgents ≤ p.agents.length) s!"the phase {p.name} has fewer agents than minAgents"
-    let speakers := p.checker :: p.supervisor.name ::
+    let supervisor := match p.supervisor with
+      | .agent a => [a.name]
+      | .rule _ => []
+    let speakers := p.checker :: supervisor ++
       ((p.author.map (·.name)).toList ++ p.agents.map (·.name))
+    let words := p.words.map (·.1)
+    ensure (!words.isEmpty && words.all (fun w => !w.isEmpty && w.all Char.isAlpha) &&
+      words.eraseDups.length == words.length) s!"the decision words of the phase {p.name} are not distinct words of letters"
     -- A `DROP` line names agents, so a name holds no comma and no space.
     ensure (speakers.all plainName) s!"a speaker of the phase {p.name} has no plain name"
     ensure (speakers.eraseDups.length == speakers.length)
@@ -203,14 +261,18 @@ In each round of a phase the author writes the work, and the check reports on
 it under the name of the checker. Each active agent replies. A reply that
 starts with `NO OBJECTION`, after any marks such as `**`, has no objection,
 and any other reply is an objection. The supervisor replies last. The first
-word of its reply is the decision, after any marks.
+word of its reply is the decision, after any marks. The words below are the default ones, and a phase
+may name each meaning by other words. A rule supervisor decides by a function
+of the round and adds no turn.
 
 * `CONTINUE` starts another round. It requires an agent with an objection or
   a failed last check. The lines `DROP a, b` of the reply name further agents
   to drop.
 * `ACCEPT` moves the flow to the next phase, or ends it with the status
   `accepted` after the last phase. When the last check of the flow failed, the
-  flow refuses the acceptance on the thread and starts another round.
+  flow refuses the final acceptance on the thread. The latest phase with an
+  author then writes the work again, in another round of the current phase or
+  after a return to an earlier phase.
 * `BACK` returns to an earlier phase, the one that a line `PHASE name` names
   or else the previous one.
 * `REJECT` ends the flow with the status `rejected`.
@@ -245,9 +307,7 @@ def run (flow : Flow) (start : Thread) : IO Outcome := do
         let failure ← phase.check text
         let t2 ← IO.monoMsNow
         passed := failure.isNone
-        let report := match failure with
-          | none => "The check passes."
-          | some reason => s!"The check fails. {reason}"
+        let report := phase.report failure
         thread := t.push { speaker := phase.checker, text := report }
         entries := (entries.push (entry author.name text .work (t1 - t0))).push
           (entry phase.checker report .check (t2 - t1))
@@ -262,30 +322,47 @@ def run (flow : Flow) (start : Thread) : IO Outcome := do
           if objects then objectors := objectors ++ [agent.name]
           entries := entries.push
             (entry agent.name text (if objects then .objection else .noObjection) (t1 - t0))
-      let t0 ← IO.monoMsNow
-      let (reply, t) ← phase.supervisor.reply thread
-      let t1 ← IO.monoMsNow
-      thread := t
-      verdict := reply
-      entries := entries.push (entry phase.supervisor.name reply .decision (t1 - t0))
-      let decision ← match parseDecision flow.phases index reply with
-        | .ok d => pure d
-        | .error reason => throw (protocolError reason reply)
-      let named := (drops reply).eraseDups
-      if let some name := named.find? (!active.contains ·) then
-        throw (protocolError s!"the agent {name} is not active" reply)
+      let mut reply := "(the rule of the phase)"
+      let mut named : List String := []
+      let mut decision : Decision := .continueDebate
+      match phase.supervisor with
+      | .agent s =>
+        let t0 ← IO.monoMsNow
+        let (text, t) ← s.reply thread
+        let t1 ← IO.monoMsNow
+        thread := t
+        verdict := text
+        reply := text
+        entries := entries.push (entry s.name text .decision (t1 - t0))
+        decision ← match parseDecision flow.phases index text with
+          | .ok d => pure d
+          | .error reason => throw (protocolError reason text)
+        named := (drops text).eraseDups
+        if let some name := named.find? (!active.contains ·) then
+          throw (protocolError s!"the agent {name} is not active" text)
+      | .rule decide =>
+        let word := decide { round, maxRounds := phase.maxRounds, passed, objectors }
+        decision ← match resolve flow.phases index word "" with
+          | .ok d => pure d
+          | .error reason => throw (protocolError reason reply)
       match decision with
       | .continueDebate =>
         if objectors.isEmpty && passed then
           throw (protocolError "no agent objects and the last check passed" reply)
         active := remaining active objectors named phase.minAgents
       | .accept =>
-        if passed then
+        if passed || index + 1 < flow.phases.size then
           next := some (index + 1)
           break
-        let notice := "The acceptance did not happen, since the check of the last work failed."
-        thread := thread.push { speaker := phase.checker, text := notice }
-        entries := entries.push (entry phase.checker notice .notice)
+        thread := thread.push { speaker := phase.checker, text := phase.refusal }
+        entries := entries.push (entry phase.checker phase.refusal .notice)
+        -- The latest phase with an author writes the work again.
+        if phase.author.isNone then
+          let authored := (List.range index).reverse.find? fun i =>
+            (flow.phases[i]?.bind (·.author)).isSome
+          if let some i := authored then
+            next := some i
+            break
       | .back i =>
         next := some i
         break

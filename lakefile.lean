@@ -32,18 +32,29 @@ lean_exe scenarios where
   srcDir := "tests"
   moreLinkArgs := curlLinkArgs
 
+/-- The helpers of the tests with scripted agents. -/
+lean_lib Harness where
+  srcDir := "tests"
+
 /-- The tests of the generic flow, with scripted agents. -/
 lean_exe flowtests where
   root := `FlowTests
   srcDir := "tests"
   moreLinkArgs := curlLinkArgs
 
-/-- The test driver. It builds and runs the executables `flowtests` and
-`scenarios`, and stops at the first failure. -/
+/-- The tests of the pull request flow, with scripted agents. -/
+lean_exe prtests where
+  root := `PullRequestTests
+  srcDir := "tests"
+  moreLinkArgs := curlLinkArgs
+
+/-- The test driver. It builds and runs the executables `flowtests`,
+`prtests` and `scenarios`, and stops at the first failure. -/
 @[test_driver]
 script test args do
   let lake := (← getLake).toString
-  let flow ← (← IO.Process.spawn { cmd := lake, args := #["exe", "flowtests"] }).wait
-  if flow != 0 then return flow
+  for exe in ["flowtests", "prtests"] do
+    let code ← (← IO.Process.spawn { cmd := lake, args := #["exe", exe] }).wait
+    if code != 0 then return code
   let child ← IO.Process.spawn { cmd := lake, args := #["exe", "scenarios"] ++ args.toArray }
   child.wait
