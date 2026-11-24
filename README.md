@@ -25,9 +25,20 @@ The repository is `basic-adversarial-agentic-framework`, the Lake package is
 
 ## Installation
 
-The package needs the tools of `lean-aibackend`, which its README lists. They
-are `elan`, a C compiler, the libcurl library with its headers, `python3` and
-`openssl`. The scenarios also run `lean`, which `elan` provides.
+**The package works on macOS only.** Linux and Windows are work in progress.
+
+The package needs the tools of `lean-aibackend`, which its README lists.
+
+| Tool | Requirement |
+| --- | --- |
+| `elan` | Installs the Lean version of `lean-toolchain`, and `lean` for the scenarios |
+| A C compiler, as `cc` | Builds the C shim of `lean-aibackend` |
+| libcurl | Version 7.85.0 or later, with TLS support, its headers and `curl-config` |
+| `python3` with the `ssl` module, and `openssl` | Run the scenarios |
+
+The command `curl-config --version` prints the version of libcurl. Ubuntu
+22.04 ships libcurl 7.81.0, so `lake test` stops at the libcurl check there.
+On macOS the Command Line Tools for Xcode provide every tool but `elan`.
 
 ```
 git clone https://github.com/Beneficial-AI-Foundation/basic-adversarial-agentic-framework.git
@@ -49,14 +60,21 @@ A run with real agents needs one of the two Claude backends.
 ## Quick start
 
 The executable `prove` runs the flow with five real Claude agents per issue.
+The backend is `ffi` unless the second argument says `cli`. Without an API key
+in the secret store, `prove` with the backend `ffi` stops before the first
+issue. A user of the Claude CLI therefore passes `cli`.
 
 ```
 lake exe prove examples ffi 12        # one example issue, through the API
 lake exe prove examples cli 12        # the same issue, through the Claude CLI
-lake exe prove examples               # every example issue
-lake exe prove book/claims.json       # the claims of the book
+lake exe prove examples               # every example issue, through the API
+lake exe prove book/claims.json       # the claims of the book, through the API
+lake exe prove book/claims.json cli   # the claims of the book, through the Claude CLI
 lake exe prove <issues.json> [ffi|cli] [number|all] [maxTokens]
 ```
+
+The book has results for 17 of its 18 claims, so a run on it repeats only
+Art. 253 Cor.
 
 A run prints one row per issue and writes three kinds of files.
 

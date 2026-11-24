@@ -6,7 +6,10 @@ open Adversarial
 
 Usage: `prove <source> [ffi|cli] [number|all] [maxTokens]`. The source is the
 word `examples`, for the example issues of `Adversarial.Examples`, or the path
-of a JSON file of issues. The backend is `ffi` by default. A number restricts
+of a JSON file of issues. The backend is `ffi` by default. That backend needs
+an Anthropic API key in the secret store, and `prove` reads the key once
+before the first issue. Without a key it stops with a message that names the
+backend `cli`. A number restricts
 the run to one issue. The last argument sets the token limit of a reply over
 the API backend, which is 64000 by default.
 
@@ -20,6 +23,14 @@ def main (args : List String) : IO UInt32 := do
     unless backend == "ffi" || backend == "cli" do
       IO.eprintln s!"unknown backend {backend}, expected ffi or cli"
       return 1
+    if backend == "ffi" then
+      if let .error e ← (AIBackend.Claude.Api.Client.fromDefault).toBaseIO then
+        IO.eprintln s!"The ffi backend found no Anthropic API key. {e}
+Store the key once with
+  security add-generic-password -a \"$USER\" -s lean-aibackend-anthropic-api-key -w
+or run the logged in claude CLI instead, with the backend cli, as in
+  lake exe prove {source} cli"
+        return 1
     let only := ((rest.drop 1).head?).bind (·.toNat?)
     let maxTokens := (((rest.drop 2).head?).bind (·.toNat?)).getD 64000
     let issues ← if source == "examples" then pure (Examples.all.map (·.issue)) else loadIssues source
