@@ -9,6 +9,9 @@ opposed roles create and review a pull request that carries Lean code for a
 mathematical issue in prose. A supervisor agent repeats both phases until it
 decides. The Lean checker judges each version of the code.
 
+The page of the package on Veriapps is
+https://veriapps.org/apps/adversarial-agents.
+
 The package builds on [lean-aibackend](https://github.com/Beneficial-AI-Foundation/lean-aibackend),
 which provides the Claude API client, the Claude CLI backend, the key handling
 and the TLS checks.
