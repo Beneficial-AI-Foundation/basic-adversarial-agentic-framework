@@ -1,11 +1,12 @@
 import Adversarial
 
 /-! The tests of the generic flow of `Adversarial.Flow`. Scripted agents reply
-with fixed texts, so the tests need no backend and no server. The twenty
-tests cover flows of one, two and three phases, the returns to earlier phases,
-the drops of agents and the floor `minAgents`, the limits of rounds and
-visits, each decision of a supervisor, the replies outside the protocol, the
-failure of the check, the errors of agents and the contents of the thread. -/
+with fixed texts, so the tests need no backend and no server. They cover flows
+of one, two and three phases, the returns to earlier phases, the drops of
+agents and the floor `minAgents`, the limits of rounds and visits, each
+decision of a supervisor, the replies outside the protocol, the failure of the
+check, the errors of agents, the names of speakers and the entries of the
+thread. -/
 
 open AIBackend
 open Adversarial
@@ -133,15 +134,16 @@ def backPrevious (f : Failures) : IO Unit := do
   check f "status" (o.status == .accepted) (repr o.status).pretty
   check f "visits" (o.visits == 4) (toString o.visits)
   check f "work" (o.work == "v2") o.work
-  check f "dropped" (((o.entries.toList.filter (·.visit == 2)).filter (·.round == 2)).all
-    (·.active == ["critic"]))
+  let second := (o.entries.toList.filter (·.visit == 2)).filter (·.round == 2)
+  check f "dropped" (second.length == 2 && second.all (·.active == ["critic"]))
+    (toString (second.map (·.active)))
   check f "restored" (activeAt o "sr" == ["critic", "judge"]) (toString (activeAt o "sr"))
 
-/-- Test 6. `BACK` with the name of a phase returns to that phase. -/
+/-- Test 6. `BACK` with a line `PHASE name` returns to that phase. -/
 def backNamed (f : Failures) : IO Unit := do
   let last : Phase := {
     name := "review", agents := [← scripted "critic" ["OBJECTION the definition is wrong"]]
-    supervisor := ← scripted "sr" ["BACK draft the definition is wrong", "ACCEPT"] }
+    supervisor := ← scripted "sr" ["BACK the definition is wrong\nPHASE draft", "ACCEPT"] }
   let o ← Flow.run { phases := #[← quietPhase "draft", ← quietPhase "pr", last] } start
   check f "status" (o.status == .accepted) (repr o.status).pretty
   let visits := (o.entries.toList.map fun e => (e.visit, e.phase)).eraseDups.map (·.2)
@@ -158,7 +160,7 @@ def backFirst (f : Failures) : IO Unit := do
 def backLater (f : Failures) : IO Unit := do
   let review : Phase := {
     name := "review", agents := [← scripted "a" ["OBJECTION x"]]
-    supervisor := ← scripted "s" ["BACK review"] }
+    supervisor := ← scripted "s" ["BACK\nPHASE review"] }
   let e ← errorOf (Flow.run { phases := #[← quietPhase "pr", review] } start)
   check f "error" (e.any (has · "not earlier than the current phase")) (toString e)
 
@@ -274,6 +276,7 @@ def errors (f : Failures) : IO Unit := do
   check f "phase-name" (← fails { phases := #[← quietPhase "two words"] })
   check f "min-agents" (← fails { phases := #[{ (← quietPhase "pr") with minAgents := 2 }] })
   check f "no-round" (← fails { phases := #[{ (← quietPhase "pr") with maxRounds := 0 }] })
+  check f "flow-name" (← fails { name := "", phases := #[← quietPhase "pr"] })
   check f "shared-speaker" (← fails { phases := #[{ (← quietPhase "pr") with checker := "pr-agent" }] })
   check f "empty-thread" (← fails { phases := #[← quietPhase "pr"] } #[])
 
@@ -284,8 +287,9 @@ def entries (f : Failures) : IO Unit := do
     name := "pr", author := some (← scripted "prover" ["v1", "v2"])
     agents := [← scripted "challenger" ["OBJECTION x", "NO OBJECTION"]]
     supervisor := ← scripted "sp" ["CONTINUE", "ACCEPT"] }
-  let o ← Flow.run { phases := #[pr, ← quietPhase "review"] } start
+  let o ← Flow.run { name := "formalize", phases := #[pr, ← quietPhase "review"] } start
   check f "speakers" (o.thread.speakers == "claim" :: speakersOf o) (toString (speakersOf o))
+  check f "flow" (o.entries.toList.all (·.flow == "formalize"))
   check f "texts" (o.thread.toList.drop 1 == o.entries.toList.map fun e => ({ speaker := e.speaker, text := e.text } : Turn))
   check f "kinds" (o.entries.toList.map (·.kind) == [.work, .check, .objection, .decision,
     .work, .check, .noObjection, .decision, .noObjection, .decision])
@@ -295,6 +299,49 @@ def entries (f : Failures) : IO Unit := do
   check f "rounds" (o.entries.toList.map (·.round) == [1, 1, 1, 1, 2, 2, 2, 2, 1, 1])
   check f "active" (o.entries.toList.all (·.active.length == 1))
 
+/-- Test 21. Marks before `NO OBJECTION` do not make the reply an objection. -/
+def noObjectionMarks (f : Failures) : IO Unit := do
+  let o ← Flow.run { phases := #[{
+    name := "review"
+    agents := [← scripted "a" ["**NO OBJECTION.** the statement matches"], ← scripted "b" ["OBJECTION x"]]
+    supervisor := ← scripted "s" ["CONTINUE", "ACCEPT"] }] } start
+  check f "kind" ((o.entries.toList.find? (·.speaker == "a")).any (·.kind == .noObjection))
+  check f "active" (activeAt o "s" == ["b"]) (toString (activeAt o "s"))
+
+/-- Test 22. A failed check allows `CONTINUE` without an objection, so the
+author can repair the work. -/
+def continueFailedCheck (f : Failures) : IO Unit := do
+  let o ← Flow.run { phases := #[{
+    name := "pr", author := some (← scripted "prover" ["bad", "good"])
+    check := fun work => pure (if work == "good" then none else some "the proof has a gap")
+    agents := [← scripted "a" ["NO OBJECTION"]]
+    supervisor := ← scripted "s" ["CONTINUE repair the proof", "ACCEPT"] }] } start
+  check f "status" (o.status == .accepted) (repr o.status).pretty
+  check f "work" (o.work == "good") o.work
+  check f "active" (activeAt o "s" == ["a"]) (toString (activeAt o "s"))
+
+/-- Test 23. A `PHASE` line with an unknown name, or with two names, is
+outside the protocol. -/
+def backUnknown (f : Failures) : IO Unit := do
+  let flowWith (reply : String) : IO Flow := do
+    return { phases := #[← quietPhase "draft", {
+      name := "review", agents := [← scripted "a" ["OBJECTION x"]]
+      supervisor := ← scripted "s" [reply] }] }
+  let unknown ← errorOf ((← flowWith "BACK\nPHASE drfat").run start)
+  check f "unknown" (unknown.any (has · "no phase has the name drfat")) (toString unknown)
+  let two ← errorOf ((← flowWith "BACK\nPHASE draft, review").run start)
+  check f "two" (two.any (has · "more than one phase")) (toString two)
+
+/-- Test 24. Each speaker of a phase has a plain name, so a `DROP` line can
+name every agent. -/
+def speakerNames (f : Failures) : IO Unit := do
+  let e ← errorOf (Flow.run { phases := #[{
+    name := "review", agents := [← scripted "critic, senior" ["OBJECTION x"]]
+    supervisor := ← scripted "s" ["ACCEPT"] }] } start)
+  check f "comma" (e.any (has · "has no plain name")) (toString e)
+  let checker ← errorOf (Flow.run { phases := #[{ (← quietPhase "pr") with checker := "lean 4" }] } start)
+  check f "checker" (checker.any (has · "has no plain name")) (toString checker)
+
 def tests : List (String × (Failures → IO Unit)) := [
   ("one-phase", onePhase), ("two-rounds", twoRounds), ("two-phases", twoPhases),
   ("three-phases", threePhases), ("back-previous", backPrevious), ("back-named", backNamed),
@@ -302,7 +349,9 @@ def tests : List (String × (Failures → IO Unit)) := [
   ("drop-named", dropNamed), ("drop-floor", dropFloor), ("drop-exact", dropExact),
   ("round-limit", roundLimit), ("visit-limit", visitLimit), ("reject", reject),
   ("continue-quiet", continueQuiet), ("protocol", protocol), ("check-failure", checkFailure),
-  ("errors", errors), ("entries", entries)]
+  ("errors", errors), ("entries", entries), ("no-objection-marks", noObjectionMarks),
+  ("continue-failed-check", continueFailedCheck), ("back-unknown", backUnknown),
+  ("speaker-names", speakerNames)]
 
 def main : IO Unit := do
   let failures ← IO.mkRef 0

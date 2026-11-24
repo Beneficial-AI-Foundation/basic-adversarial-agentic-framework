@@ -129,15 +129,16 @@ same code as a flow with several phases.
 
 In a round the author of the phase, if the phase has one, writes the work, and
 the check of the phase reports on it. Each active agent then replies. A reply
-that starts with `NO OBJECTION` has no objection, and any other reply is an
-objection. The supervisor replies last, and the first word of its reply is the
-decision.
+that starts with `NO OBJECTION`, after any marks such as `**`, has no
+objection, and any other reply is an objection. The supervisor replies last,
+and the first word of its reply is the decision. Every speaker of a phase has
+a plain name of letters, digits, `_` and `-`, so a `DROP` line can name it.
 
 | Decision | Effect |
 | --- | --- |
-| `CONTINUE` | Another round. It requires an objection. The supervisor drops every agent without objection and the agents of its `DROP a, b` lines |
+| `CONTINUE` | Another round. It requires an objection or a failed last check. The supervisor drops every agent without objection and the agents of its `DROP a, b` lines |
 | `ACCEPT` | The next phase, or the status `accepted` after the last phase. The flow refuses it while the last check failed |
-| `BACK` | An earlier phase, the one that the next word names or else the previous one. The phase starts again with all its agents |
+| `BACK` | An earlier phase, the one that a line `PHASE name` names or else the previous one. The phase starts again with all its agents |
 | `REJECT` | The status `rejected` |
 
 When the drops would leave fewer agents than `minAgents`, no agent leaves. A
@@ -145,9 +146,10 @@ phase that reaches `maxRounds` rounds, or a flow that reaches
 `maxVisits` visits, ends with the status `undecided`. Any other reply of a
 supervisor raises an `IO` error.
 
-The outcome holds the thread and one `Entry` per turn, with the phase, the
-visit, the round, the speaker, the text, the kind of the turn and the active
-agents.
+The outcome holds the thread and one `Entry` per turn, with the flow, the
+phase, the visit, the round, the speaker, the text, the kind of the turn, the
+active agents and the duration. The entries hold no output tokens, since
+`Backend.ask` returns only the text of a reply.
 
 ## Pull request flow
 
@@ -403,12 +405,12 @@ toolchain. Among the 17 accepted files of the book, four use
 
 ## Tests
 
-The command `lake test` first runs the 20 tests of the generic flow in
+The command `lake test` first runs the 24 tests of the generic flow in
 `tests/FlowTests.lean`, with scripted agents and no backend. They cover flows
 of one, two and three phases, the returns to earlier phases, the drops of
 agents and the floor `minAgents`, the limits of rounds and visits, each
 decision, the replies outside the protocol, the failure of the check, the
-errors of agents and the entries of the thread.
+errors of agents, the names of speakers and the entries of the thread.
 
 The command then runs six scenarios with the deterministic simulated
 assistants of `tests/mock_server.py`, through the `Claude.Api` client and TLS.
