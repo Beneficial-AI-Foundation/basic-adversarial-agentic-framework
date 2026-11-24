@@ -1,4 +1,4 @@
-import Adversarial.Flow
+import Adversarial.Agent
 
 /-! The pull request flow for a mathematical issue.
 
@@ -43,8 +43,6 @@ structure Outcome where
   /-- The last reply of the supervisor. -/
   verdict : String
   thread : Thread
-  /-- One entry per turn, with its phase, visit and round. -/
-  entries : Array Flow.Entry
 
 /-- The texts that the Lean code may not contain. They are the commands that run
 code or extend the language. The list is a filter, not a sandbox. -/
@@ -112,64 +110,52 @@ def stripFence (reply : String) : String :=
     else "\n".intercalate (first :: rest)
   | [] => ""
 
-/-- The phase `pr` of the pull request flow. The proponent of `authors`
-writes the code, the Lean check reports on it, and the opponent attacks it. A
-rule decides. The phase ends when the check passes and the opponent has no
-objection, or after `pairRounds` rounds. -/
-def prPhase (authors : Pair) (issue : Issue) (pairRounds : Nat) (checker : Checker) : Flow.Phase where
-  name := "pr"
-  author := some authors.proponent
-  checker := "lean"
-  check := fun reply => leanCheck issue.theoremName (stripFence reply) checker
-  report
-    | none => "Lean accepts the code."
-    | some failure => s!"The Lean check failed. {failure}"
-  agents := [authors.opponent]
-  maxRounds := pairRounds
-  supervisor := .rule fun v =>
-    if (v.passed && v.objectors.isEmpty) || v.round == v.maxRounds then .accept else .continueDebate
+/-- Runs the pull request flow of an issue.
 
-/-- The phase `review` of the pull request flow. The two agents of
-`reviewers` debate the code once, and the supervisor decides with `MERGE`,
-`REVISE` or `REJECT`. -/
-def reviewPhase (reviewers : Pair) (supervisor : Agent) : Flow.Phase where
-  name := "review"
-  checker := "lean"
-  agents := [reviewers.proponent, reviewers.opponent]
-  maxRounds := 1
-  supervisor := supervisor
-  words := [("MERGE", .accept), ("REVISE", .back), ("REJECT", .reject)]
-  refusal := "The merge did not happen, since the Lean check of the last version of the code failed."
+Each round of the supervisor has three phases. In the first phase the pair
+`authors` creates the pull request. Its proponent writes the code. The Lean
+check reports on the thread. Its opponent attacks the code. The phase ends
+when the check passes and the opponent has no objection, or after
+`pairRounds` rounds. In the second phase the pair `reviewers` debates the
+code once. In the third phase the supervisor reads the thread and decides.
 
-/-- Runs the pull request flow of an issue. It is a `Flow` of two phases,
-`prPhase` and `reviewPhase`, and one round of the supervisor is one visit to
-each phase.
-
-The first word of the supervisor's reply is the decision, after any marks such
-as `**`. `MERGE` ends the flow when the Lean check accepted the last version of
-the code. Otherwise the flow reports the refusal on the thread and returns to
-the phase `pr`. `REVISE` returns to the phase `pr` as well. `REJECT` ends the
-flow. The flow raises an `IO` error on any other reply. It ends with the
-status `undecided` when the supervisor reaches no decision within `maxRounds`
-rounds. The values `maxRounds` and `pairRounds` must be positive. -/
+The first word of the supervisor's reply is the decision, without punctuation
+or emphasis marks. `MERGE` ends the
+flow when the Lean check accepted the last version of the code. Otherwise the flow reports
+the refusal on the thread and continues. `REJECT` ends the flow. `REVISE`
+starts the next round. The flow raises an `IO` error on any other reply. It
+ends with the status `undecided` when the supervisor reaches no decision
+within `maxRounds` rounds. -/
 def pullRequestFlow (authors reviewers : Pair) (supervisor : Agent) (issue : Issue)
     (maxRounds : Nat := 4) (pairRounds : Nat := 3) (checker : Checker := {}) : IO Outcome := do
-  ensure (maxRounds > 0) "the flow has no round of the supervisor"
-  let start : Thread := #[{
+  let mut thread : Thread := #[{
     speaker := "issue"
     text := s!"Issue #{issue.number}. {issue.title}\n{issue.text}\n" ++
       s!"The main theorem of the code must have the name {issue.theoremName}." }]
-  let o ← Flow.run {
-    name := "pull-request"
-    phases := #[prPhase authors issue pairRounds checker, reviewPhase reviewers supervisor]
-    maxVisits := 2 * maxRounds } start
-  let status : Status := match o.status with
-    | .accepted => .merged
-    | .rejected => .rejected
-    | .undecided => .undecided
-  let rounds := ((o.entries.toList.filter (·.phase == "review")).map (·.visit)).eraseDups.length
-  return { status, code := stripFence o.work, rounds, verdict := o.verdict, thread := o.thread,
-           entries := o.entries }
+  let mut code := ""
+  let mut verdict := ""
+  for round in [1:maxRounds + 1] do
+    let creation ← authors.debate thread pairRounds (·.startsWith "NO OBJECTION") fun reply => do
+      match ← leanCheck issue.theoremName (stripFence reply) checker with
+      | none => pure (true, some { speaker := "lean", text := "Lean accepts the code." })
+      | some failure =>
+        pure (false, some { speaker := "lean", text := s!"The Lean check failed. {failure}" })
+    let review ← reviewers.debate creation.thread 1
+    let (reply, decided) ← supervisor.reply review.thread
+    thread := decided
+    verdict := reply
+    code := stripFence creation.proposal
+    let decision := String.ofList ((verdict.toList.dropWhile (!·.isAlpha)).takeWhile Char.isAlpha)
+    if decision == "MERGE" then
+      if creation.accepted then
+        return { status := .merged, code, rounds := round, verdict, thread }
+      thread := thread.push ⟨"lean",
+        "The merge did not happen, since the Lean check of the last version of the code failed."⟩
+    else if decision == "REJECT" then
+      return { status := .rejected, code, rounds := round, verdict, thread }
+    else if decision != "REVISE" then
+      throw (IO.userError s!"the reply of the supervisor is outside the protocol: {verdict}")
+  return { status := .undecided, code, rounds := maxRounds, verdict, thread }
 
 /-! ## Teams -/
 
@@ -298,8 +284,7 @@ def proveIssues (team : Issue → IO Team) (label : String) (issues : List Issue
           IO.FS.writeFile (results / s!"{issue.theoremName}.thread.md") pr.thread.render
           if pr.status == .merged then
             IO.FS.writeFile (results / s!"{issue.theoremName}.lean") (pr.code ++ "\n")
-          let objections := pr.entries.toList.filter fun e =>
-            e.speaker == "challenger" && e.kind == .objection
+          let objections := (pr.thread.turnsOf "challenger").filter (·.startsWith "OBJECTION")
           pure s!"| {issue.number} | {issue.title} | {pr.status.name} | {pr.rounds} | {objections.length} | {seconds} |"
         | .error e => do
           errors := errors + 1

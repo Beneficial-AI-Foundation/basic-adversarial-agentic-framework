@@ -121,42 +121,6 @@ The function `Thread.render` gives a leading space to any line of a turn that
 starts like a header. A turn therefore cannot forge the header of another
 speaker.
 
-## Generic flow
-
-The module `Adversarial.Flow` holds a flow of `n` phases. In each phase a
-supervisor manages a set of agents over rounds. A flow with one phase runs the
-same code as a flow with several phases.
-
-In a round the author of the phase, if the phase has one, writes the work, and
-the check of the phase reports on it. Each active agent then replies. A reply
-that starts with `NO OBJECTION`, after any marks such as `**`, has no
-objection, and any other reply is an objection. The supervisor replies last,
-and the first word of its reply is the decision. A phase may name each
-decision by words of its own, as the review of the pull request flow does
-with `MERGE`, `REVISE` and `REJECT`. A rule supervisor decides by a function
-of the round and adds no turn. Every speaker of a phase has
-a plain name of letters, digits, `_` and `-`, so a `DROP` line can name it.
-
-| Decision | Effect |
-| --- | --- |
-| `CONTINUE` | Another round. It requires an objection or a failed last check. The supervisor drops every agent without objection and the agents of its `DROP a, b` lines |
-| `ACCEPT` | The next phase, or the status `accepted` after the last phase. The flow refuses the final acceptance while the last check failed, and the latest phase with an author writes the work again |
-| `BACK` | An earlier phase, the one that a line `PHASE name` names or else the previous one. The phase starts again with all its agents |
-| `REJECT` | The status `rejected` |
-
-When the drops would leave fewer agents than `minAgents`, no agent leaves. A
-phase whose check is not `binding` reports a failed check as evidence only.
-The field `onDecision` of a flow runs an action after each decision, with the
-state so far. A
-phase that reaches `maxRounds` rounds, or a flow that reaches
-`maxVisits` visits, ends with the status `undecided`. Any other reply of a
-supervisor raises an `IO` error.
-
-The outcome holds the thread and one `Entry` per turn, with the flow, the
-phase, the visit, the round, the speaker, the text, the kind of the turn, the
-active agents and the duration. The entries hold no output tokens, since
-`Backend.ask` returns only the text of a reply.
-
 ## Pull request flow
 
 The module `Adversarial.PullRequest` holds the flow. An issue is prose with
@@ -171,20 +135,15 @@ part.
 | defender | reviewers, opponent | Rebuts the critic |
 | supervisor | none | Reads the thread and replies `MERGE`, `REVISE` or `REJECT` |
 
-The flow is a `Flow` of two phases, and each round of the supervisor visits
-both.
+Each round of the supervisor has three phases.
 
-1. Phase `pr`. The authors debate. After each version of the code the Lean
-   check reports on the thread. A rule supervisor ends the phase when the
-   check passes and the challenger has no objection, or after three rounds.
-   It adds no turn.
-2. Phase `review`. The reviewers debate the code once, and the supervisor
-   decides. `REVISE` returns to the phase `pr`. `MERGE` takes effect only when
-   the Lean check accepted the last version of the code. Otherwise the flow
-   reports the refusal and returns to the phase `pr`. The flow ends with the
-   status `undecided` after four rounds.
-
-The outcome holds the entries of the generic flow, one per turn.
+1. The authors debate. After each version of the code the Lean check reports
+   on the thread. The phase ends when the check passes and the challenger has
+   no objection. The debate has at most three rounds.
+2. The reviewers debate the code once.
+3. The supervisor decides. `REVISE` starts the next round. `MERGE` takes
+   effect only when the Lean check accepted the last version of the code. The
+   flow ends with the status `undecided` after four rounds.
 
 The status `merged` records the decision `MERGE` of the supervisor. The flow
 performs no git operation. It writes the accepted code to a file.
@@ -206,7 +165,6 @@ agents judged faithful. No person reviewed that judgment.
 | `Issue` | Prose with mathematics, and the name of the Lean theorem |
 | `Checker`, `leanCheck` | The Lean check. The default runs `lean --stdin`, with a time limit of 300 seconds, so the code uses the Lean core library only |
 | `pullRequestFlow` | The flow, for two pairs and a supervisor |
-| `prPhase`, `reviewPhase` | The two phases of the flow |
 | `Team`, `Team.api`, `Team.cli` | The five agents with their instructions, over the API backend or the CLI backend |
 | `Team.run` | The flow of one issue with a team |
 | `proveIssues`, `proveClaims`, `loadIssues` | The flow on a list of issues or on a JSON file, with saved results |
@@ -417,23 +375,7 @@ toolchain. Among the 17 accepted files of the book, four use
 
 ## Tests
 
-The command `lake test` first runs the 29 tests of the generic flow in
-`tests/FlowTests.lean`, with scripted agents and no backend. They cover flows
-of one, two and three phases, the returns to earlier phases, the drops of
-agents and the floor `minAgents`, the limits of rounds and visits, each
-decision, the replies outside the protocol, the failure of the check, the
-errors of agents, the names of speakers, rule supervisors, the decision words
-of a phase, the return after a refused acceptance and the entries of the
-thread.
-
-The command then runs the 21 tests of the pull request flow in
-`tests/PullRequestTests.lean`, with scripted agents and the Lean of the
-toolchain. They cover `MERGE`, `REVISE` and `REJECT`, a merge without a
-passing Lean check, the limits of rounds, the end of the phase `pr`, a forged
-header, the replies outside the protocol, the preconditions, every case of
-the Lean check, the entries of the thread and the summary of `proveIssues`.
-
-Last, the command runs six scenarios with the deterministic simulated
+The command `lake test` runs six scenarios with the deterministic simulated
 assistants of `tests/mock_server.py`, through the `Claude.Api` client and TLS.
 
 | Scenario | Content |
@@ -459,14 +401,10 @@ macOS, on a machine without an API key and without the Claude CLI.
 ## Layout
 
 - `Adversarial/Agent.lean` — agents, threads and adversarial pairs.
-- `Adversarial/Flow.lean` — the generic flow of `n` phases.
 - `Adversarial/PullRequest.lean` — the flow, the Lean check, teams and the runs on issues.
 - `Adversarial/Examples.lean` — the example issues.
 - `Prove.lean` — the executable `prove`.
 - `book/` — the claims of the book and the results of one run.
-- `tests/Harness.lean` — the helpers of the tests with scripted agents.
-- `tests/FlowTests.lean` — the tests of the generic flow.
-- `tests/PullRequestTests.lean` — the tests of the pull request flow.
 - `tests/Scenarios.lean` — the scenarios.
 - `tests/mock_server.py` — the mock of the Messages API, with the simulated assistants.
 
