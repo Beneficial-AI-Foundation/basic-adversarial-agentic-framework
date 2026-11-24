@@ -414,19 +414,21 @@ toolchain. Among the 17 accepted files of the book, four use
 
 ## Tests
 
-The command `lake test` first runs the 24 tests of the generic flow in
+The command `lake test` first runs the 27 tests of the generic flow in
 `tests/FlowTests.lean`, with scripted agents and no backend. They cover flows
 of one, two and three phases, the returns to earlier phases, the drops of
 agents and the floor `minAgents`, the limits of rounds and visits, each
 decision, the replies outside the protocol, the failure of the check, the
-errors of agents, the names of speakers and the entries of the thread.
+errors of agents, the names of speakers, rule supervisors, the decision words
+of a phase, the return after a refused acceptance and the entries of the
+thread.
 
-The command then runs the 20 tests of the pull request flow in
+The command then runs the 21 tests of the pull request flow in
 `tests/PullRequestTests.lean`, with scripted agents and the Lean of the
 toolchain. They cover `MERGE`, `REVISE` and `REJECT`, a merge without a
 passing Lean check, the limits of rounds, the end of the phase `pr`, a forged
 header, the replies outside the protocol, the preconditions, every case of
-the Lean check and the entries of the thread.
+the Lean check, the entries of the thread and the summary of `proveIssues`.
 
 Last, the command runs six scenarios with the deterministic simulated
 assistants of `tests/mock_server.py`, through the `Claude.Api` client and TLS.

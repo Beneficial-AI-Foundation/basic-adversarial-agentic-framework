@@ -209,6 +209,25 @@ def entries (f : Failures) : IO Unit := do
   check f "kinds" ((o.entries.toList.filter (·.visit == 2)).map (·.kind) ==
     [.objection, .objection, .decision])
 
+/-- Test 21. The summary of `proveIssues` counts the objections of the
+challenger as the flow does, also after marks. -/
+def summary (f : Failures) : IO Unit := do
+  let dir : System.FilePath := ".lake" / "build" / s!"prtests-{← IO.monoNanosNow}"
+  let team (_ : Issue) : IO Team := do
+    return {
+      authors := { proponent := ← scripted "prover" [good, revised]
+                   opponent := ← scripted "challenger" ["**OBJECTION** the docstring is vague", "NO OBJECTION"] }
+      reviewers := { proponent := ← scripted "critic" ["DEFECT none"], opponent := ← scripted "defender" ["REBUT"] }
+      supervisor := ← scripted "supervisor" ["MERGE"] }
+  try
+    let errors ← proveIssues team "test" [issue] dir
+    check f "errors" (errors == 0) (toString errors)
+    let text ← IO.FS.readFile (dir / "summary-test.md")
+    check f "row" (has text "| merged | 1 | 1 |") text
+    check f "code" ((← IO.FS.readFile (dir / "even_add_even.lean")) == revised ++ "\n")
+  finally
+    IO.FS.removeDirAll dir
+
 def tests : List (String × (Failures → IO Unit)) := [
   ("merge", merge), ("revise-merge", reviseMerge), ("reject", reject),
   ("merge-refused", mergeRefused), ("refused-repaired", refusedRepaired), ("undecided", undecided),
@@ -216,6 +235,6 @@ def tests : List (String × (Failures → IO Unit)) := [
   ("objection-continues", objectionContinues), ("forged-header", forgedHeader), ("marks", marks),
   ("protocol", protocol), ("preconditions", preconditions), ("fence", fence),
   ("forbidden", forbidden), ("imports", imports), ("axioms", axioms), ("failures", failures),
-  ("entries", entries)]
+  ("entries", entries), ("summary", summary)]
 
 def main : IO Unit := runTests "pull request" tests

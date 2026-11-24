@@ -6,8 +6,9 @@ with fixed texts, so the tests need no backend and no server. They cover flows
 of one, two and three phases, the returns to earlier phases, the drops of
 agents and the floor `minAgents`, the limits of rounds and visits, each
 decision of a supervisor, the replies outside the protocol, the failure of the
-check, the errors of agents, the names of speakers and the entries of the
-thread. -/
+check, the errors of agents, the names of speakers, rule supervisors, the
+decision words of a phase, the return after a refused acceptance and the
+entries of the thread. -/
 
 open AIBackend
 open Adversarial
@@ -296,6 +297,47 @@ def speakerNames (f : Failures) : IO Unit := do
   let checker ← errorOf (Flow.run { phases := #[{ (← quietPhase "pr") with checker := "lean 4" }] } start)
   check f "checker" (checker.any (has · "has no plain name")) (toString checker)
 
+/-- Test 25. A rule supervisor decides from the round and adds no turn. -/
+def ruleSupervisor (f : Failures) : IO Unit := do
+  let o ← Flow.run { phases := #[{
+    name := "pr", author := some (← scripted "prover" ["v1", "v2"])
+    agents := [← scripted "a" ["OBJECTION x"]]
+    supervisor := .rule fun v => if v.round == 2 && v.passed then .accept else .continueDebate }] } start
+  check f "status" (o.status == .accepted) (repr o.status).pretty
+  check f "speakers" (o.thread.speakers == ["claim", "prover", "check", "a", "prover", "check", "a"])
+    (toString o.thread.speakers)
+  check f "no-decision" (o.entries.toList.all (·.kind != .decision))
+
+/-- Test 26. A phase names its decisions by words of its own. -/
+def phaseWords (f : Failures) : IO Unit := do
+  let review (reply : String) (words : List (String × Word)) : IO Flow := do
+    return { phases := #[{ name := "review", agents := [← scripted "a" ["NO OBJECTION"]]
+                           supervisor := ← scripted "s" [reply], words }] }
+  let custom := [("APPROVE", Word.accept), ("DENY", Word.reject)]
+  let o ← (← review "APPROVE" custom).run start
+  check f "approve" (o.status == .accepted) (repr o.status).pretty
+  let e ← errorOf ((← review "ACCEPT" custom).run start)
+  check f "default-word" (e.any (has · "not one of APPROVE, DENY")) (toString e)
+  let bad ← errorOf ((← review "OK" [("OK2", Word.accept)]).run start)
+  check f "letters" (bad.any (has · "decision words")) (toString bad)
+
+/-- Test 27. A refused final acceptance returns to the latest phase with an
+author. An earlier phase may accept work whose check failed. -/
+def refusalReturns (f : Failures) : IO Unit := do
+  let draft : Phase := {
+    name := "draft", author := some (← scripted "prover" ["bad", expect "REFUSED" "good"])
+    check := fun w => pure (if w == "good" then none else some "gap")
+    report := fun r => if r.isNone then "PASS" else "FAIL"
+    agents := [← scripted "a" ["NO OBJECTION"]], supervisor := ← scripted "sd" ["ACCEPT"] }
+  let review : Phase := {
+    name := "review", refusal := "REFUSED", agents := [← scripted "b" ["NO OBJECTION"]]
+    supervisor := ← scripted "sr" ["ACCEPT"] }
+  let o ← Flow.run { phases := #[draft, review] } start
+  check f "status" (o.status == .accepted) (repr o.status).pretty
+  check f "visits" (o.visits == 4) (toString o.visits)
+  check f "reports" (o.thread.turnsOf "check" == ["FAIL", "REFUSED", "PASS"])
+    (toString (o.thread.turnsOf "check"))
+
 def tests : List (String × (Failures → IO Unit)) := [
   ("one-phase", onePhase), ("two-rounds", twoRounds), ("two-phases", twoPhases),
   ("three-phases", threePhases), ("back-previous", backPrevious), ("back-named", backNamed),
@@ -305,6 +347,7 @@ def tests : List (String × (Failures → IO Unit)) := [
   ("continue-quiet", continueQuiet), ("protocol", protocol), ("check-failure", checkFailure),
   ("errors", errors), ("entries", entries), ("no-objection-marks", noObjectionMarks),
   ("continue-failed-check", continueFailedCheck), ("back-unknown", backUnknown),
-  ("speaker-names", speakerNames)]
+  ("speaker-names", speakerNames), ("rule-supervisor", ruleSupervisor), ("phase-words", phaseWords),
+  ("refusal-returns", refusalReturns)]
 
 def main : IO Unit := runTests "flow" tests

@@ -151,7 +151,7 @@ the code. Otherwise the flow reports the refusal on the thread and returns to
 the phase `pr`. `REVISE` returns to the phase `pr` as well. `REJECT` ends the
 flow. The flow raises an `IO` error on any other reply. It ends with the
 status `undecided` when the supervisor reaches no decision within `maxRounds`
-rounds. -/
+rounds. The values `maxRounds` and `pairRounds` must be positive. -/
 def pullRequestFlow (authors reviewers : Pair) (supervisor : Agent) (issue : Issue)
     (maxRounds : Nat := 4) (pairRounds : Nat := 3) (checker : Checker := {}) : IO Outcome := do
   ensure (maxRounds > 0) "the flow has no round of the supervisor"
@@ -298,7 +298,8 @@ def proveIssues (team : Issue → IO Team) (label : String) (issues : List Issue
           IO.FS.writeFile (results / s!"{issue.theoremName}.thread.md") pr.thread.render
           if pr.status == .merged then
             IO.FS.writeFile (results / s!"{issue.theoremName}.lean") (pr.code ++ "\n")
-          let objections := (pr.thread.turnsOf "challenger").filter (·.startsWith "OBJECTION")
+          let objections := pr.entries.toList.filter fun e =>
+            e.speaker == "challenger" && e.kind == .objection
           pure s!"| {issue.number} | {issue.title} | {pr.status.name} | {pr.rounds} | {objections.length} | {seconds} |"
         | .error e => do
           errors := errors + 1
