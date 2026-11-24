@@ -135,14 +135,13 @@ decision.
 
 | Decision | Effect |
 | --- | --- |
-| `CONTINUE` | Another round. It requires an objection. The supervisor drops every agent without objection and the agents of its `DROP a, b` lines, never below `minAgents` |
+| `CONTINUE` | Another round. It requires an objection. The supervisor drops every agent without objection and the agents of its `DROP a, b` lines |
 | `ACCEPT` | The next phase, or the status `accepted` after the last phase. The flow refuses it while the last check failed |
 | `BACK` | An earlier phase, the one that the next word names or else the previous one. The phase starts again with all its agents |
 | `REJECT` | The status `rejected` |
 
-At the floor `minAgents`, dropped agents return. The named agents with an
-objection return first, the last named first. The agents without objection
-return last. A phase that reaches `maxRounds` rounds, or a flow that reaches
+When the drops would leave fewer agents than `minAgents`, no agent leaves. A
+phase that reaches `maxRounds` rounds, or a flow that reaches
 `maxVisits` visits, ends with the status `undecided`. Any other reply of a
 supervisor raises an `IO` error.
 

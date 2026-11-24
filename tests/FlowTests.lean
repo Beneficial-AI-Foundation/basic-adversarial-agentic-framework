@@ -182,24 +182,25 @@ def dropNamed (f : Failures) : IO Unit := do
     supervisor := ← scripted "s" ["CONTINUE the objection of b repeats a\nDROP b", "ACCEPT"] }] } start
   check f "active" (activeAt o "s" == ["a", "c"]) (toString (activeAt o "s"))
 
-/-- Test 11. No drop goes below `minAgents`. An agent without objection returns. -/
+/-- Test 11. Drops that would leave fewer than `minAgents` agents drop no agent. -/
 def dropFloor (f : Failures) : IO Unit := do
   let o ← Flow.run { phases := #[{
     name := "review", minAgents := 2
     agents := [← scripted "a" ["OBJECTION one"], ← scripted "b" ["NO OBJECTION"],
                ← scripted "c" ["NO OBJECTION"]]
     supervisor := ← scripted "s" ["CONTINUE", "ACCEPT"] }] } start
-  check f "active" (activeAt o "s" == ["a", "b"]) (toString (activeAt o "s"))
+  check f "active" (activeAt o "s" == ["a", "b", "c"]) (toString (activeAt o "s"))
 
-/-- Test 12. At the floor, the last named agent with an objection returns first. -/
-def dropPriority (f : Failures) : IO Unit := do
+/-- Test 12. Drops that leave exactly `minAgents` agents take effect. -/
+def dropExact (f : Failures) : IO Unit := do
   let o ← Flow.run { phases := #[{
     name := "review", minAgents := 2
     agents := [← scripted "a" ["OBJECTION one"], ← scripted "b" ["OBJECTION two"],
                ← scripted "c" ["OBJECTION three"]]
-    supervisor := ← scripted "s" ["CONTINUE\nDROP b, c", "ACCEPT"] }] } start
-  check f "active" (activeAt o "s" == ["a", "c"]) (toString (activeAt o "s"))
-  check f "remaining" (remaining ["a", "b", "c", "d"] ["a", "c", "d"] ["d", "c"] 2 == ["a", "c"])
+    supervisor := ← scripted "s" ["CONTINUE\nDROP c", "ACCEPT"] }] } start
+  check f "active" (activeAt o "s" == ["a", "b"]) (toString (activeAt o "s"))
+  check f "below" (remaining ["a", "b", "c", "d"] ["a", "c", "d"] ["d", "c"] 2 == ["a", "b", "c", "d"])
+  check f "exact" (remaining ["a", "b", "c", "d"] ["a", "c", "d"] ["d", "c"] 1 == ["a"])
 
 /-- Test 13. A phase that reaches `maxRounds` ends the flow as undecided. -/
 def roundLimit (f : Failures) : IO Unit := do
@@ -298,7 +299,7 @@ def tests : List (String × (Failures → IO Unit)) := [
   ("one-phase", onePhase), ("two-rounds", twoRounds), ("two-phases", twoPhases),
   ("three-phases", threePhases), ("back-previous", backPrevious), ("back-named", backNamed),
   ("back-first", backFirst), ("back-later", backLater), ("drop-quiet", dropQuiet),
-  ("drop-named", dropNamed), ("drop-floor", dropFloor), ("drop-priority", dropPriority),
+  ("drop-named", dropNamed), ("drop-floor", dropFloor), ("drop-exact", dropExact),
   ("round-limit", roundLimit), ("visit-limit", visitLimit), ("reject", reject),
   ("continue-quiet", continueQuiet), ("protocol", protocol), ("check-failure", checkFailure),
   ("errors", errors), ("entries", entries)]

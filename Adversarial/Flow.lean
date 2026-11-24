@@ -11,8 +11,9 @@ earlier phase or rejects the work. A flow with one phase is the case `n = 1`
 of the same code.
 
 After a round that continues, the supervisor drops every agent without
-objection and possibly more, never below the `minAgents` of the phase. A
-return to a phase starts it again with all its agents. -/
+objection and possibly more. When the drops would leave fewer agents than the
+`minAgents` of the phase, no agent leaves. A return to a phase starts it again
+with all its agents. -/
 
 namespace Adversarial
 
@@ -41,7 +42,7 @@ structure Phase where
   supervisor : Agent
   /-- The largest number of rounds of one visit to the phase. -/
   maxRounds : Nat := 3
-  /-- The number of agents below which no drop goes. -/
+  /-- The least number of agents that the drops of a round may leave. -/
   minAgents : Nat := 1
 
 /-- A decision of a supervisor. -/
@@ -145,15 +146,11 @@ def parseDecision (phases : Array Phase) (index : Nat) (reply : String) : Except
 
 /-- The agents that stay active after a round that continues. The supervisor
 drops every agent without objection and the agents that it names. When fewer
-than `minAgents` agents stay, dropped agents return. The named agents with an
-objection return first, the last named first, so a supervisor names them from
-the weakest objection to the strongest. The agents without objection return
-last. The result keeps the order of `active`. -/
+than `minAgents` agents would stay, no agent leaves. The result keeps the
+order of `active`. -/
 def remaining (active objectors named : List String) (minAgents : Nat) : List String :=
   let kept := active.filter fun a => objectors.contains a && !named.contains a
-  let restore := (named.filter objectors.contains).reverse ++ active.filter (!objectors.contains ·)
-  let back := restore.take (minAgents - kept.length)
-  active.filter fun a => kept.contains a || back.contains a
+  if kept.length < minAgents then active else kept
 
 end Flow
 
