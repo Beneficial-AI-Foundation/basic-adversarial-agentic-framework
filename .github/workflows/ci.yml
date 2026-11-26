@@ -2,22 +2,38 @@ name: CI
 
 on:
   push:
-    branches: [main]
   pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
-  macos:
-    name: macOS
-    runs-on: macos-latest
+  build:
+    # The package works on macOS (Apple silicon). Linux and Windows are work in
+    # progress, because the lean-aibackend dependency fails to link on Linux and
+    # Windows has no default key helper. macos-14 is the supported target.
+    name: build + scenarios (macos-arm64)
+    runs-on: macos-14
     steps:
       - uses: actions/checkout@v4
-      - name: Install elan
-        run: |
-          curl -sSf https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y --default-toolchain none
-          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
-      - name: Build
-        run: lake build prove scenarios
-      # The scenarios use simulated assistants, so they need no API key. They
-      # also check the accepted Lean code of the book.
-      - name: Test
+
+      # elan + the toolchain pinned in lean-toolchain, with the .lake cache.
+      # This also fetches the lean-aibackend dependency and builds its C shim.
+      - name: Build prove and scenarios
+        uses: leanprover/lean-action@v1
+        with:
+          auto-config: false
+          build: true
+          build-args: "prove scenarios"
+          use-github-cache: true
+
+      # `lake test` runs the scenarios against the simulated assistants of
+      # tests/mock_server.py, which also checks the accepted Lean code of the
+      # book. It needs no API key and spends no tokens.
+      #
+      # The `prove` CLI runs five real Claude agents per issue and therefore
+      # needs an API key and spends tokens, so it is deliberately NOT run in CI.
+      - name: Scenarios
         run: lake test
